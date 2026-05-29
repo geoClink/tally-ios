@@ -6,56 +6,46 @@
 //
 
 import SwiftUI
-import SwiftData
+import Supabase
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var isAuthenticated = false
+    @State private var isLoading = true
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        Group {
+            if isLoading {
+                ProgressView()
+            } else if !hasSeenOnboarding {
+                OnboardingView()
+            } else if !isAuthenticated {
+                AuthView()
+            } else {
+                TabView {
+                    HomeView()
+                        .tabItem {
+                            Label("Timer", systemImage: "timer")
+                        }
+                    ReportsView()
+                        .tabItem {
+                            Label("Reports", systemImage: "chart.bar.fill")
+                        }
                 }
             }
-        } detail: {
-            Text("Select an item")
+        }
+        .task {
+            await checkAuth()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    private func checkAuth() async {
+        do {
+            let session = try await supabase.auth.session
+            isAuthenticated = session != nil
+        } catch {
+            isAuthenticated = false
         }
+        isLoading = false
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
-    }
-}
-
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }

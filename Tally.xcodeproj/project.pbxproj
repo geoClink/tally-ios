@@ -6,20 +6,80 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		DE0DA3812FC8B240000110F0 /* Tally Watch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = DE0DA3772FC8B23F000110F0 /* Tally Watch Watch App.app */; platformFilters = (ios, maccatalyst, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DE721C012FC8E7EB00E688D4 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = DE721C002FC8E7EB00E688D4 /* Auth */; };
+		DE721C032FC8E7EB00E688D4 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = DE721C022FC8E7EB00E688D4 /* PostgREST */; };
+		DE721C052FC8E7EB00E688D4 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DE721C042FC8E7EB00E688D4 /* Supabase */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DE0DA37F2FC8B240000110F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DE0DA32B2FC8641A000110F0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DE0DA3762FC8B23F000110F0;
+			remoteInfo = "Tally Watch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DE0DA3852FC8B240000110F0 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				DE0DA3812FC8B240000110F0 /* Tally Watch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		DE0DA3332FC8641A000110F0 /* Tally.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tally.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DE0DA3772FC8B23F000110F0 /* Tally Watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tally Watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DE721BFE2FC8E03200E688D4 /* Exceptions for "Tally" folder in "Tally Watch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SharedDataManager.swift,
+			);
+			target = DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DE0DA3352FC8641A000110F0 /* Tally */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				DE721BFE2FC8E03200E688D4 /* Exceptions for "Tally" folder in "Tally Watch Watch App" target */,
+			);
 			path = Tally;
+			sourceTree = "<group>";
+		};
+		DE0DA3782FC8B23F000110F0 /* Tally Watch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Tally Watch Watch App";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		DE0DA3302FC8641A000110F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DE721C032FC8E7EB00E688D4 /* PostgREST in Frameworks */,
+				DE721C012FC8E7EB00E688D4 /* Auth in Frameworks */,
+				DE721C052FC8E7EB00E688D4 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE0DA3742FC8B23F000110F0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +93,7 @@
 			isa = PBXGroup;
 			children = (
 				DE0DA3352FC8641A000110F0 /* Tally */,
+				DE0DA3782FC8B23F000110F0 /* Tally Watch Watch App */,
 				DE0DA3342FC8641A000110F0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				DE0DA3332FC8641A000110F0 /* Tally.app */,
+				DE0DA3772FC8B23F000110F0 /* Tally Watch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,19 +117,46 @@
 				DE0DA32F2FC8641A000110F0 /* Sources */,
 				DE0DA3302FC8641A000110F0 /* Frameworks */,
 				DE0DA3312FC8641A000110F0 /* Resources */,
+				DE0DA3852FC8B240000110F0 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DE0DA3802FC8B240000110F0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DE0DA3352FC8641A000110F0 /* Tally */,
 			);
 			name = Tally;
 			packageProductDependencies = (
+				DE721C002FC8E7EB00E688D4 /* Auth */,
+				DE721C022FC8E7EB00E688D4 /* PostgREST */,
+				DE721C042FC8E7EB00E688D4 /* Supabase */,
 			);
 			productName = Tally;
 			productReference = DE0DA3332FC8641A000110F0 /* Tally.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DE0DA3822FC8B240000110F0 /* Build configuration list for PBXNativeTarget "Tally Watch Watch App" */;
+			buildPhases = (
+				DE0DA3732FC8B23F000110F0 /* Sources */,
+				DE0DA3742FC8B23F000110F0 /* Frameworks */,
+				DE0DA3752FC8B23F000110F0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DE0DA3782FC8B23F000110F0 /* Tally Watch Watch App */,
+			);
+			name = "Tally Watch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "Tally Watch Watch App";
+			productReference = DE0DA3772FC8B23F000110F0 /* Tally Watch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -83,6 +172,9 @@
 					DE0DA3322FC8641A000110F0 = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
+					DE0DA3762FC8B23F000110F0 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
 				};
 			};
 			buildConfigurationList = DE0DA32E2FC8641A000110F0 /* Build configuration list for PBXProject "Tally" */;
@@ -94,18 +186,29 @@
 			);
 			mainGroup = DE0DA32A2FC8641A000110F0;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DE0DA3342FC8641A000110F0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				DE0DA3322FC8641A000110F0 /* Tally */,
+				DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		DE0DA3312FC8641A000110F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DE0DA3752FC8B23F000110F0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +225,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DE0DA3732FC8B23F000110F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DE0DA3802FC8B240000110F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+				maccatalyst,
+			);
+			target = DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */;
+			targetProxy = DE0DA37F2FC8B240000110F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		DE0DA33E2FC8641B000110F0 /* Debug */ = {
@@ -251,24 +373,36 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Tally/Tally.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Tally;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -283,30 +417,110 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Tally/Tally.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Tally;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DE0DA3832FC8B240000110F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Tally Watch Watch App/Tally Watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S4RSN4KFD3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tally Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = name.GeorgeClinkscales.Tally;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
+			};
+			name = Debug;
+		};
+		DE0DA3842FC8B240000110F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Tally Watch Watch App/Tally Watch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S4RSN4KFD3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Tally Watch";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = name.GeorgeClinkscales.Tally;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.0;
 			};
 			name = Release;
 		};
@@ -331,7 +545,45 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		DE0DA3822FC8B240000110F0 /* Build configuration list for PBXNativeTarget "Tally Watch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE0DA3832FC8B240000110F0 /* Debug */,
+				DE0DA3842FC8B240000110F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DE721C002FC8E7EB00E688D4 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		DE721C022FC8E7EB00E688D4 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		DE721C042FC8E7EB00E688D4 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DE0DA32B2FC8641A000110F0 /* Project object */;
 }
