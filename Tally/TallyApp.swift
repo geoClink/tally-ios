@@ -22,6 +22,9 @@ struct TallyApp: App {
                         try? await supabase.auth.session(from: url)
                     }
                 }
+                .onAppear {
+                                NotificationManager.shared.requestPermission()
+                            }
         }
     }
 }

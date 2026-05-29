@@ -37,6 +37,11 @@ struct ContentView: View {
         .task {
             await checkAuth()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .supabaseAuthStateChanged)) { _ in
+            Task {
+                await checkAuth()
+            }
+        }
     }
     
     private func checkAuth() async {
@@ -48,4 +53,8 @@ struct ContentView: View {
         }
         isLoading = false
     }
+}
+
+extension Notification.Name {
+    static let supabaseAuthStateChanged = Notification.Name("supabaseAuthStateChanged")
 }

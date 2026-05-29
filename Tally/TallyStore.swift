@@ -101,6 +101,22 @@ class TallyStore {
             print("Error saving goal: \(error)")
         }
     }
+    
+    func deleteSessions(at offsets: IndexSet) async {
+        let sessionsToDelete = offsets.map { sessions[$0] }
+        do {
+            for session in sessionsToDelete {
+                try await supabase
+                    .from("sessions")
+                    .delete()
+                    .eq("id", value: session.id.uuidString)
+                    .execute()
+            }
+            await loadSessions()
+            NotificationManager.shared.scheduleGoalWarning(current: weeklyHours, goal: weeklyGoal)        } catch {
+            print("Error deleting session: \(error)")
+        }
+    }
 }
 
 struct SessionModel: Codable, Identifiable {

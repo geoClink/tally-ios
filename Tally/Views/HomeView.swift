@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct HomeView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -45,6 +46,24 @@ struct HomeView: View {
                 .background(RoundedRectangle(cornerRadius: 16).fill(Color.gray.opacity(0.1)))
                 .padding(.horizontal)
                 
+                if tallyStore.sessions.isEmpty && !viewModel.isRunning {
+                    VStack(spacing: 12) {
+                        Image(systemName: "timer")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("No sessions yet")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Text("Tap Start to begin tracking your first session")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .padding()
+                }
+                
                 // Timer display
                 VStack(spacing: 8) {
                     if viewModel.isRunning {
@@ -80,6 +99,9 @@ struct HomeView: View {
                 HStack(spacing: 20) {
                     if !viewModel.isRunning {
                         Button {
+                            #if os(iOS)
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            #endif
                             showClientPicker = true
                         } label: {
                             Label("Start", systemImage: "play.fill")
@@ -112,6 +134,9 @@ struct HomeView: View {
                         
                         Button {
                             Task {
+                                #if os(iOS)
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                #endif
                                 let hours = viewModel.stop()
                                 await tallyStore.addSession(
                                     client: selectedClient,
@@ -148,6 +173,14 @@ struct HomeView: View {
                             showGoalSetting = true
                         } label: {
                             Label("Set Weekly Goal", systemImage: "target")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            Task {
+                                try? await supabase.auth.signOut()
+                            }
+                        } label: {
+                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
