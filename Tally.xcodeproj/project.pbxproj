@@ -50,12 +50,20 @@
 			);
 			target = DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */;
 		};
+		DE721C112FC920BB00E688D4 /* Exceptions for "Tally" folder in "Tally" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = DE0DA3322FC8641A000110F0 /* Tally */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		DE0DA3352FC8641A000110F0 /* Tally */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				DE721C112FC920BB00E688D4 /* Exceptions for "Tally" folder in "Tally" target */,
 				DE721BFE2FC8E03200E688D4 /* Exceptions for "Tally" folder in "Tally Watch Watch App" target */,
 			);
 			path = Tally;
@@ -382,6 +390,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tally/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tally;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -426,6 +435,7 @@
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tally/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Tally;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

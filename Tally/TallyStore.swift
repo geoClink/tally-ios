@@ -44,12 +44,18 @@ class TallyStore {
     }
     
     func addSession(client: String, hours: Double, taskNote: String?) async {
+        guard let user = try? await supabase.auth.user() else {
+            print("No user logged in")
+            return
+        }
+        
         let now = Date()
         let formatter = ISO8601DateFormatter()
         let dateString = formatter.string(from: now).prefix(10).description
         
         do {
             let newSession = SessionInsert(
+                userId: user.id.uuidString,
                 client: client,
                 startTime: now,
                 endTime: now,
@@ -120,6 +126,7 @@ struct SessionModel: Codable, Identifiable {
 }
 
 struct SessionInsert: Codable {
+    let userId: String
     let client: String
     let startTime: Date
     let endTime: Date
@@ -129,6 +136,7 @@ struct SessionInsert: Codable {
     let isManual: Bool
     
     enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
         case client
         case startTime = "start_time"
         case endTime = "end_time"

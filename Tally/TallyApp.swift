@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import Auth
+import Supabase
 
 @main
 struct TallyApp: App {
@@ -15,6 +17,11 @@ struct TallyApp: App {
         WindowGroup {
             ContentView()
                 .environment(tallyStore)
+                .onOpenURL { url in
+                    Task {
+                        try? await supabase.auth.session(from: url)
+                    }
+                }
         }
     }
 }
