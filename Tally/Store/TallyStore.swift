@@ -15,7 +15,6 @@ class TallyStore {
     var weeklyGoal: Double = 5.0
     var isLoading = false
     
-    
     var weeklyHours: Double {
         let calendar = Calendar.current
         let now = Date()
@@ -48,7 +47,10 @@ class TallyStore {
             print("No user logged in")
             return
         }
-        
+        guard hours > 0.001 else {
+            print("Session too short to save")
+            return
+        }
         let now = Date()
         let formatter = ISO8601DateFormatter()
         let dateString = formatter.string(from: now).prefix(10).description
@@ -69,6 +71,7 @@ class TallyStore {
                 .insert(newSession)
                 .execute()
             await loadSessions()
+            NotificationManager.shared.scheduleGoalWarning(current: weeklyHours, goal: weeklyGoal)
         } catch {
             print("Error saving session: \(error)")
         }
@@ -113,7 +116,7 @@ class TallyStore {
                     .execute()
             }
             await loadSessions()
-            NotificationManager.shared.scheduleGoalWarning(current: weeklyHours, goal: weeklyGoal)        } catch {
+        } catch {
             print("Error deleting session: \(error)")
         }
     }

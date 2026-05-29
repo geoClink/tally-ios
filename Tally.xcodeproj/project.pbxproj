@@ -46,7 +46,7 @@
 		DE721BFE2FC8E03200E688D4 /* Exceptions for "Tally" folder in "Tally Watch Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				SharedDataManager.swift,
+				Helpers/SharedDataManager.swift,
 			);
 			target = DE0DA3762FC8B23F000110F0 /* Tally Watch Watch App */;
 		};

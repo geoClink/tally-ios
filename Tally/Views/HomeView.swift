@@ -16,7 +16,10 @@ struct HomeView: View {
     @State private var showClientPicker = false
     @State private var showManualEntry = false
     @State private var showGoalSetting = false
+    @State private var showTaskNote = false
     @State private var selectedClient = ""
+    @State private var taskNoteText = ""
+    @State private var pendingHours: Double = 0
     
     private var timerFontSize: CGFloat {
         switch dynamicTypeSize {
@@ -133,17 +136,11 @@ struct HomeView: View {
                         .accessibilityHint(viewModel.isPaused ? "Resumes tracking time for \(viewModel.activeClient)" : "Pauses tracking time for \(viewModel.activeClient)")
                         
                         Button {
-                            Task {
-                                #if os(iOS)
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                #endif
-                                let hours = viewModel.stop()
-                                await tallyStore.addSession(
-                                    client: selectedClient,
-                                    hours: hours,
-                                    taskNote: nil
-                                )
-                            }
+                            #if os(iOS)
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            #endif
+                            pendingHours = viewModel.stop()
+                            showTaskNote = true
                         } label: {
                             Label("Stop", systemImage: "stop.fill")
                                 .font(.headline)
@@ -203,6 +200,58 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showGoalSetting) {
                 GoalSettingView()
+            }
+            .sheet(isPresented: $showTaskNote) {
+                NavigationStack {
+                    VStack(spacing: 20) {
+                        Text("What did you work on?")
+                            .font(.headline)
+                        
+                        TextField("e.g. Built login screen, fixed API bug...", text: $taskNoteText, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(3...6)
+                            .padding(.horizontal)
+                            .accessibilityLabel("Task note")
+                            .accessibilityHint("Optional description of what you worked on")
+                        
+                        Text("Session: \(selectedClient) — \(TimeFormatter.shortFormat(pendingHours))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 24)
+                    .navigationTitle("Add Note")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Skip") {
+                                Task {
+                                    await tallyStore.addSession(
+                                        client: selectedClient,
+                                        hours: pendingHours,
+                                        taskNote: nil
+                                    )
+                                    taskNoteText = ""
+                                    showTaskNote = false
+                                }
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                Task {
+                                    await tallyStore.addSession(
+                                        client: selectedClient,
+                                        hours: pendingHours,
+                                        taskNote: taskNoteText.isEmpty ? nil : taskNoteText
+                                    )
+                                    taskNoteText = ""
+                                    showTaskNote = false
+                                }
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
             }
         }
     }
