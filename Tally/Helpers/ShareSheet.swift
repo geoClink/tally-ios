@@ -7,20 +7,20 @@
 
 import SwiftUI
 
-#if os(iOS)
+#if os(iOS) && !canImport(AppKit)
 struct ShareSheet: UIViewControllerRepresentable {
     let url: URL
-    
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: [url], applicationActivities: nil)
     }
-    
+
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 #else
 struct ShareSheet: View {
     let url: URL
-    
+
     var body: some View {
         VStack(spacing: 16) {
             Text("Export Ready")
@@ -34,6 +34,7 @@ struct ShareSheet: View {
             .buttonStyle(.borderedProminent)
         }
         .padding()
+        .frame(minWidth: 280)
     }
 }
 #endif

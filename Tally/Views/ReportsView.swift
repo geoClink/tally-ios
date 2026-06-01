@@ -8,15 +8,20 @@
 import SwiftUI
 import Charts
 import Supabase
+import TipKit
 
 struct ReportsView: View {
     @Environment(TallyStore.self) var tallyStore
     @State private var isLoading = false
-    @State private var showExportSheet = false
     @State private var exportURL: URL?
     @State private var showShareSheet = false
     @State private var showAllClients = false
-    @State private var showExportClientPicker = false
+    @State private var sessionToDelete: SessionModel?
+    @State private var showDeleteConfirmation = false
+    @State private var showExportOptions = false
+    @State private var showPaywall = false
+    private let purchases = PurchaseManager.shared
+    private let exportTip = ExportLockedTip()
     
     private var topClientsForChart: [(String, Double)] {
         Array(allTimeByClient.prefix(20))
@@ -25,7 +30,7 @@ struct ReportsView: View {
     private var weeklyByClient: [(String, Double)] {
         let calendar = Calendar.current
         let now = Date()
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         var dict: [String: Double] = [:]
         for session in tallyStore.sessions.filter({ $0.startTime >= monday }) {
             dict[session.client, default: 0] += session.hours
@@ -72,8 +77,13 @@ struct ReportsView: View {
                         
                         Section("All Time") {
                             if !topClientsForChart.isEmpty {
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    Chart(topClientsForChart, id: \.0) { client, hours in
+                                GeometryReader { geo in
+                                    let minBarWidth: CGFloat = 120
+                                    let totalMinWidth = CGFloat(topClientsForChart.count) * minBarWidth
+                                    let needsScroll = totalMinWidth > geo.size.width
+                                    let chartWidth = needsScroll ? totalMinWidth : geo.size.width
+                                    
+                                    let chartContent = Chart(topClientsForChart, id: \.0) { client, hours in
                                         BarMark(
                                             x: .value("Client", client),
                                             y: .value("Hours", hours)
@@ -95,14 +105,19 @@ struct ReportsView: View {
                                             }
                                         }
                                     }
-#if os(iOS)
-.frame(width: max(CGFloat(topClientsForChart.count) * 120, UIScreen.main.bounds.width - 32), height: 200)
-#else
-.frame(width: max(CGFloat(topClientsForChart.count) * 120, 600), height: 200)
-#endif
+                                    .frame(width: chartWidth, height: 200)
                                     .padding(.vertical, 8)
+                                    
+                                    if needsScroll {
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            chartContent
+                                        }
+                                    } else {
+                                        chartContent
+                                    }
                                 }
-                                .accessibilityLabel("Scrollable bar chart showing hours by client")
+                                .frame(height: 216)
+                                .accessibilityLabel("Bar chart showing hours by client")
                             }
                             
                             if allTimeByClient.isEmpty {
@@ -110,14 +125,18 @@ struct ReportsView: View {
                                     .foregroundStyle(.secondary)
                             } else {
                                 ForEach(allTimeByClient, id: \.0) { client, hours in
-                                    HStack {
-                                        Text(client)
-                                        Spacer()
-                                        Text(TimeFormatter.shortFormat(hours))
-                                            .foregroundStyle(.secondary)
+                                    NavigationLink {
+                                        ClientDetailView(client: client)
+                                    } label: {
+                                        HStack {
+                                            Text(client)
+                                            Spacer()
+                                            Text(TimeFormatter.shortFormat(hours))
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                     .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel("\(client): \(TimeFormatter.accessibleFormat(hours)) total")
+                                    .accessibilityLabel("\(client): \(TimeFormatter.accessibleFormat(hours)) total. Tap for details.")
                                 }
                                 
                                 if allTimeByClient.count > 20 {
@@ -156,8 +175,9 @@ struct ReportsView: View {
                                 .accessibilityElement(children: .combine)
                             }
                             .onDelete { indexSet in
-                                Task {
-                                    await tallyStore.deleteSessions(at: indexSet)
+                                if let index = indexSet.first {
+                                    sessionToDelete = tallyStore.sessions.prefix(20)[tallyStore.sessions.prefix(20).index(tallyStore.sessions.prefix(20).startIndex, offsetBy: index)]
+                                    showDeleteConfirmation = true
                                 }
                             }
                         }
@@ -168,33 +188,54 @@ struct ReportsView: View {
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
-                        showExportSheet = true
+                        if purchases.canExportCSV {
+                            showExportOptions = true
+                        } else {
+                            showPaywall = true
+                        }
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        Image(systemName: purchases.canExportCSV ? "square.and.arrow.up" : "lock.fill")
                     }
-                    .accessibilityLabel("Export hours")
+                    .accessibilityLabel(purchases.canExportCSV ? "Export hours" : "Upgrade to export")
+                    .popoverTip(exportTip)
+                    .onChange(of: purchases.canExportCSV) { _, canExport in
+                        if canExport { exportTip.invalidate(reason: .actionPerformed) }
+                    }
                 }
             }
-            .confirmationDialog("Export Hours", isPresented: $showExportSheet) {
-                Button("This Week") { export(range: .thisWeek, client: nil) }
-                Button("This Month") { export(range: .thisMonth, client: nil) }
-                Button("All Time") { export(range: .allTime, client: nil) }
-                Button("By Client...") { showExportClientPicker = true }
-                Button("Cancel", role: .cancel) {}
-            }
-            .confirmationDialog("Choose Client", isPresented: $showExportClientPicker) {
-                ForEach(tallyStore.recentClients, id: \.self) { client in
-                    Button(client) { export(range: .allTime, client: client) }
-                }
-                Button("Cancel", role: .cancel) {}
+            .sheet(isPresented: $showExportOptions) {
+                ExportOptionsView(
+                    clients: tallyStore.recentClients,
+                    onExport: { range, client in
+                        export(range: range, client: client)
+                        showExportOptions = false
+                    }
+                )
+                .presentationDetents([.medium])
             }
             .sheet(isPresented: $showShareSheet) {
                 if let url = exportURL {
                     ShareSheet(url: url)
                 }
             }
+            .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(isPresented: $showAllClients) {
                 AllClientsView(clients: allTimeByClient)
+            }
+            .alert("Delete Session?", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    Task {
+                        if let session = sessionToDelete,
+                           let index = tallyStore.sessions.firstIndex(where: { $0.id == session.id }) {
+                            await tallyStore.deleteSessions(at: IndexSet([index]))
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                if let session = sessionToDelete {
+                    Text("Delete \(TimeFormatter.shortFormat(session.hours)) session for \(session.client) on \(session.date ?? "")? This cannot be undone.")
+                }
             }
             .task {
                 isLoading = true
@@ -208,7 +249,15 @@ struct ReportsView: View {
         let clientName = client?.replacingOccurrences(of: " ", with: "-") ?? "all"
         let filename = "tally-\(clientName)-\(range.rawValue.lowercased().replacingOccurrences(of: " ", with: "-")).csv"
         let csv = CSVExporter.generate(sessions: tallyStore.sessions, range: range, client: client)
-        exportURL = CSVExporter.save(csv: csv, filename: filename)
+        let url = CSVExporter.save(csv: csv, filename: filename)
+        exportURL = url
+        #if canImport(AppKit)
+        showExportOptions = false
+        if let url {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
+        #else
         showShareSheet = true
+        #endif
     }
 }

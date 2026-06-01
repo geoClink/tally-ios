@@ -12,6 +12,7 @@ struct ContentView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var isAuthenticated = false
     @State private var isLoading = true
+    @State private var errorHandler = ErrorHandler.shared
     
     var body: some View {
         Group {
@@ -24,15 +25,22 @@ struct ContentView: View {
             } else {
                 TabView {
                     HomeView()
-                        .tabItem {
-                            Label("Timer", systemImage: "timer")
-                        }
+                        .tabItem { Label("Timer", systemImage: "timer") }
                     ReportsView()
-                        .tabItem {
-                            Label("Reports", systemImage: "chart.bar.fill")
-                        }
+                        .tabItem { Label("Reports", systemImage: "chart.bar.fill") }
+                    CalendarView()
+                        .tabItem { Label("Activity", systemImage: "calendar") }
+                    TeamView()
+                        .tabItem { Label("Team", systemImage: "person.3.fill") }
                 }
             }
+        }
+        .alert("Something went wrong", isPresented: $errorHandler.showError) {
+            Button("OK", role: .cancel) {
+                errorHandler.currentError = nil
+            }
+        } message: {
+            Text(errorHandler.currentError ?? "An unknown error occurred")
         }
         .task {
             await checkAuth()

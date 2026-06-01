@@ -6,17 +6,30 @@
 //
 
 import SwiftUI
+import TipKit
 
 struct ClientPickerView: View {
     @Binding var selectedClient: String
     var recentClients: [String]
     var onStart: () -> Void
-    
+
     @State private var customClient: String = ""
     @FocusState private var isCustomFocused: Bool
-    
+    @State private var showPaywall = false
+    private let purchases = PurchaseManager.shared
+    private let clientLimitTip = ClientLimitTip()
+
+    private var isNewClient: Bool {
+        let name = customClient.isEmpty ? selectedClient : customClient
+        return !recentClients.contains(name)
+    }
+
+    private var blockedByFreeLimit: Bool {
+        isNewClient && !purchases.canAddClient(existingCount: recentClients.count)
+    }
+
     private var canStart: Bool {
-        !selectedClient.isEmpty || !customClient.isEmpty
+        (!selectedClient.isEmpty || !customClient.isEmpty) && !blockedByFreeLimit
     }
     
     var body: some View {
@@ -72,24 +85,37 @@ struct ClientPickerView: View {
                         }
                     }
                 
-                Button {
-                    onStart()
-                } label: {
-                    Text("Start Tally")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(canStart ? Color.blue : Color.gray)
-                        )
+                if blockedByFreeLimit {
+                    Button { showPaywall = true } label: {
+                        Label("Upgrade for More Clients", systemImage: "lock.fill")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.purple))
+                    }
+                    .popoverTip(clientLimitTip)
+                } else {
+                    Button {
+                        onStart()
+                    } label: {
+                        Text("Start Tally")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(canStart ? Color.blue : Color.gray)
+                            )
+                    }
+                    .disabled(!canStart)
+                    .accessibilityLabel("Start Tally")
+                    .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")
                 }
-                .disabled(!canStart)
-                .accessibilityLabel("Start Tally")
-                .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")
             }
             .padding()
+            .sheet(isPresented: $showPaywall) { PaywallView() }
         }
     }
 }

@@ -1,0 +1,166 @@
+//
+//  CalendarView.swift
+//  Tally
+//
+//  Created by George Clinkscales on 5/28/26.
+//
+
+import SwiftUI
+
+struct CalendarView: View {
+    @Environment(TallyStore.self) var tallyStore
+    @State private var selectedMonth = Date()
+    
+    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible()), count: 7)
+    private let weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    
+    private var daysInMonth: [Date?] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth),
+              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start)
+        else { return [] }
+        
+        let dateInterval = DateInterval(start: monthFirstWeek.start, end: monthInterval.end)
+        var dates: [Date?] = []
+        var current = dateInterval.start
+        
+        while current < dateInterval.end {
+            dates.append(current)
+            guard let next = calendar.date(byAdding: .day, value: 1, to: current) else { break }
+            current = next
+        }
+        
+        while dates.count % 7 != 0 {
+            dates.append(nil)
+        }
+        
+        return dates
+    }
+    
+    private var hoursByDate: [String: Double] {
+        var dict: [String: Double] = [:]
+        for session in tallyStore.sessions {
+            let key = session.date ?? ""
+            dict[key, default: 0] += session.hours
+        }
+        return dict
+    }
+    
+    private func hours(for date: Date) -> Double {
+        let key = ISO8601DateFormatter().string(from: date).prefix(10).description
+        return hoursByDate[key] ?? 0
+    }
+    
+    private func intensity(for hours: Double) -> Double {
+        if hours <= 0 { return 0 }
+        if hours < 1 { return 0.2 }
+        if hours < 2 { return 0.4 }
+        if hours < 4 { return 0.6 }
+        if hours < 6 { return 0.8 }
+        return 1.0
+    }
+    
+    private var monthTitle: String {
+        selectedMonth.formatted(.dateTime.month(.wide).year())
+    }
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                // Month navigator
+                HStack {
+                    Button {
+                        if let prev = calendar.date(byAdding: .month, value: -1, to: selectedMonth) {
+                            selectedMonth = prev
+                        }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.title3)
+                    }
+                    .accessibilityLabel("Previous month")
+                    
+                    Spacer()
+                    
+                    Text(monthTitle)
+                        .font(.headline)
+                    
+                    Spacer()
+                    
+                    Button {
+                        if let next = calendar.date(byAdding: .month, value: 1, to: selectedMonth) {
+                            selectedMonth = next
+                        }
+                    } label: {
+                        Image(systemName: "chevron.right")
+                            .font(.title3)
+                    }
+                    .accessibilityLabel("Next month")
+                }
+                .padding(.horizontal)
+                
+                // Weekday headers
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(weekdays, id: \.self) { day in
+                        Text(day)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // Calendar grid
+                LazyVGrid(columns: columns, spacing: 8) {
+                    ForEach(Array(daysInMonth.enumerated()), id: \.offset) { _, date in
+                        if let date = date {
+                            let h = hours(for: date)
+                            let isToday = calendar.isDateInToday(date)
+                            let isCurrentMonth = calendar.isDate(date, equalTo: selectedMonth, toGranularity: .month)
+                            
+                            VStack(spacing: 2) {
+                                Text("\(calendar.component(.day, from: date))")
+                                    .font(.caption)
+                                    .fontWeight(isToday ? .bold : .regular)
+                                    .foregroundStyle(isCurrentMonth ? .primary : .secondary)
+                                
+                                Circle()
+                                    .fill(h > 0 ? Color.blue.opacity(intensity(for: h)) : Color.clear)
+                                    .frame(width: 6, height: 6)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(isToday ? Color.blue.opacity(0.1) : Color.clear)
+                            )
+                            .accessibilityLabel(h > 0 ? "\(calendar.component(.day, from: date)), \(TimeFormatter.shortFormat(h)) logged" : "\(calendar.component(.day, from: date))")
+                        } else {
+                            Color.clear
+                                .frame(height: 36)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+                // Legend
+                HStack(spacing: 16) {
+                    Text("Less")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    ForEach([0.2, 0.4, 0.6, 0.8, 1.0], id: \.self) { intensity in
+                        Circle()
+                            .fill(Color.blue.opacity(intensity))
+                            .frame(width: 10, height: 10)
+                    }
+                    Text("More")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle("Activity")
+        }
+    }
+}

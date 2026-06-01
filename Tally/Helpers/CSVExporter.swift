@@ -41,10 +41,10 @@ struct CSVExporter {
         
         switch range {
         case .thisWeek:
-            let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+            let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
             return sessions.filter { $0.startTime >= monday }
         case .thisMonth:
-            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
             return sessions.filter { $0.startTime >= startOfMonth }
         case .allTime:
             return sessions

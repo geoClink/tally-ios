@@ -12,13 +12,18 @@ import Supabase
 @Observable
 class TallyStore {
     var sessions: [SessionModel] = []
+
+    var visibleSessions: [SessionModel] {
+        PurchaseManager.shared.applyHistoryLimit(to: sessions)
+    }
+    var clientRates: [ClientRate] = []
     var weeklyGoal: Double = 5.0
     var isLoading = false
     
     var weeklyHours: Double {
         let calendar = Calendar.current
         let now = Date()
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         return sessions
             .filter { $0.startTime >= monday }
             .reduce(0) { $0 + $1.hours }
@@ -26,6 +31,10 @@ class TallyStore {
     
     var recentClients: [String] {
         Array(Set(sessions.map { $0.client })).sorted()
+    }
+    
+    func hourlyRate(for client: String) -> Double {
+        clientRates.first { $0.client == client }?.hourlyRate ?? 0
     }
     
     func loadSessions() async {
@@ -37,20 +46,51 @@ class TallyStore {
                 .execute()
                 .value
             sessions = response
+            PhoneSessionManager.shared.sendClients(recentClients)
+            writeWidgetSummary()
+            await drainPendingQueue()
         } catch {
-            print("Error loading sessions: \(error)")
+            ErrorHandler.shared.handle(error, context: "Loading sessions")
+        }
+    }
+    
+    func loadClientRates() async {
+        do {
+            let response: [ClientRate] = try await supabase
+                .from("client_rates")
+                .select()
+                .execute()
+                .value
+            clientRates = response
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Loading client rates")
+        }
+    }
+    
+    func saveClientRate(client: String, hourlyRate: Double) async {
+        guard let user = try? await supabase.auth.user() else { return }
+        do {
+            let rate = ClientRateInsert(
+                userId: user.id.uuidString,
+                client: client,
+                hourlyRate: hourlyRate
+            )
+            try await supabase
+                .from("client_rates")
+                .upsert(rate)
+                .execute()
+            await loadClientRates()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Saving client rate")
         }
     }
     
     func addSession(client: String, hours: Double, taskNote: String?) async {
         guard let user = try? await supabase.auth.user() else {
-            print("No user logged in")
+            ErrorHandler.shared.handle("No user logged in")
             return
         }
-        guard hours > 0.001 else {
-            print("Session too short to save")
-            return
-        }
+        guard hours > 0.001 else { return }
         let now = Date()
         let formatter = ISO8601DateFormatter()
         let dateString = formatter.string(from: now).prefix(10).description
@@ -73,7 +113,7 @@ class TallyStore {
             await loadSessions()
             NotificationManager.shared.scheduleGoalWarning(current: weeklyHours, goal: weeklyGoal)
         } catch {
-            print("Error saving session: \(error)")
+            ErrorHandler.shared.handle(error, context: "Saving session")
         }
     }
     
@@ -88,7 +128,7 @@ class TallyStore {
                 weeklyGoal = config.weeklyGoal
             }
         } catch {
-            print("Error loading config: \(error)")
+            ErrorHandler.shared.handle(error, context: "Loading config")
         }
     }
     
@@ -101,10 +141,36 @@ class TallyStore {
                 .upsert(config)
                 .execute()
         } catch {
-            print("Error saving goal: \(error)")
+            ErrorHandler.shared.handle(error, context: "Saving goal")
         }
     }
     
+    func writeWidgetSummary() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let todaySessions = sessions.filter { $0.startTime >= today }
+        let todayHours = todaySessions.reduce(0) { $0 + $1.hours }
+        var byClient: [String: Double] = [:]
+        for s in todaySessions { byClient[s.client, default: 0] += s.hours }
+        let topClient = byClient.max(by: { $0.value < $1.value })?.key ?? ""
+        AppGroupStore.writeSummary(
+            todayHours: todayHours,
+            weeklyHours: weeklyHours,
+            weeklyGoal: weeklyGoal,
+            topClient: topClient,
+            recentClients: recentClients
+        )
+    }
+
+    func drainPendingQueue() async {
+        let queue = AppGroupStore.pendingSessionsQueue()
+        guard !queue.isEmpty else { return }
+        AppGroupStore.clearPendingSessionsQueue()
+        for session in queue {
+            await addSession(client: session.client, hours: session.hours, taskNote: nil)
+        }
+    }
+
     func deleteSessions(at offsets: IndexSet) async {
         let sessionsToDelete = offsets.map { sessions[$0] }
         do {
@@ -117,7 +183,88 @@ class TallyStore {
             }
             await loadSessions()
         } catch {
-            print("Error deleting session: \(error)")
+            ErrorHandler.shared.handle(error, context: "Deleting session")
+        }
+    }
+
+    // MARK: - Workspaces
+
+    var workspaces: [WorkspaceModel] = []
+    var workspaceMembers: [WorkspaceMember] = []
+
+    func loadWorkspaces() async {
+        guard let user = try? await supabase.auth.user() else { return }
+        do {
+            let all: [WorkspaceModel] = try await supabase
+                .from("workspaces")
+                .select()
+                .execute()
+                .value
+            workspaces = all
+            await loadWorkspaceMembers()
+            _ = user
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Loading workspaces")
+        }
+    }
+
+    func loadWorkspaceMembers() async {
+        guard !workspaces.isEmpty else { return }
+        do {
+            let ids = workspaces.map { $0.id.uuidString }
+            let members: [WorkspaceMember] = try await supabase
+                .from("workspace_members")
+                .select()
+                .in("workspace_id", values: ids)
+                .execute()
+                .value
+            workspaceMembers = members
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Loading workspace members")
+        }
+    }
+
+    func createWorkspace(name: String) async {
+        guard let user = try? await supabase.auth.user() else { return }
+        do {
+            let insert = WorkspaceInsert(name: name, ownerId: user.id.uuidString)
+            try await supabase
+                .from("workspaces")
+                .insert(insert)
+                .execute()
+            await loadWorkspaces()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Creating workspace")
+        }
+    }
+
+    func inviteMember(email: String, to workspace: WorkspaceModel) async {
+        do {
+            let insert = WorkspaceInviteInsert(
+                workspaceId: workspace.id,
+                invitedEmail: email,
+                role: "member"
+            )
+            try await supabase
+                .from("workspace_members")
+                .insert(insert)
+                .execute()
+            await loadWorkspaceMembers()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Inviting member")
+        }
+    }
+
+    func acceptInvite(memberId: UUID) async {
+        do {
+            try await supabase
+                .from("workspace_members")
+                .update(["accepted_at": ISO8601DateFormatter().string(from: Date())])
+                .eq("id", value: memberId.uuidString)
+                .execute()
+            await loadWorkspaces()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Accepting invite")
         }
     }
 }

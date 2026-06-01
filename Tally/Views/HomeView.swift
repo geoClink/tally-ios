@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Supabase
+import AppIntents
 
 struct HomeView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -175,6 +176,7 @@ struct HomeView: View {
                         Button(role: .destructive) {
                             Task {
                                 try? await supabase.auth.signOut()
+                                NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
                             }
                         } label: {
                             Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
@@ -184,6 +186,10 @@ struct HomeView: View {
                     }
                     .accessibilityLabel("More options")
                 }
+            }
+            .task {
+                await applyFocusFilter()
+                checkPendingIntents()
             }
             .sheet(isPresented: $showClientPicker) {
                 ClientPickerView(
@@ -254,5 +260,22 @@ struct HomeView: View {
                 .presentationDetents([.medium])
             }
         }
+    }
+
+    private func checkPendingIntents() {
+        if let client = AppGroupStore.pendingStartClient(), !viewModel.isRunning {
+            AppGroupStore.clearPendingIntents()
+            viewModel.start(client: client)
+        } else if AppGroupStore.pendingStop(), viewModel.isRunning {
+            AppGroupStore.clearPendingIntents()
+            pendingHours = viewModel.stop()
+            showTaskNote = true
+        }
+    }
+
+    private func applyFocusFilter() async {
+        guard let filter = try? await TallyFocusFilterIntent.current,
+              let client = filter.client, !client.isEmpty else { return }
+        selectedClient = client
     }
 }

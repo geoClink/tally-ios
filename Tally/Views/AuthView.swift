@@ -14,6 +14,7 @@ struct AuthView: View {
     @State private var isSignUp = false
     @State private var isLoading = false
     @State private var errorMessage = ""
+    @State private var showConfirmationMessage = false
     
     var body: some View {
         VStack(spacing: 24) {
@@ -51,6 +52,14 @@ struct AuthView: View {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            if showConfirmationMessage {
+                Text("Check your email to confirm your account, then sign in.")
+                    .font(.caption)
+                    .foregroundStyle(.green)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
@@ -96,16 +105,23 @@ struct AuthView: View {
         
         do {
             if isSignUp {
-                try await supabase.auth.signUp(
+                let response = try await supabase.auth.signUp(
                     email: email,
                     password: password
                 )
+                if response.session == nil {
+                    // Email confirmation required — no session yet
+                    showConfirmationMessage = true
+                    isLoading = false
+                    return
+                }
             } else {
                 try await supabase.auth.signIn(
                     email: email,
                     password: password
                 )
             }
+            NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
         } catch {
             errorMessage = error.localizedDescription
         }

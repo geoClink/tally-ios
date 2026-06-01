@@ -1,8 +1,6 @@
 //
-//  Untitled.swift
-//  Tally
-//
-//  Created by George Clinkscales on 5/28/26.
+//  RunningView.swift
+//  Tally Watch Watch App
 //
 
 import SwiftUI
@@ -13,7 +11,8 @@ struct RunningView: View {
     @Binding var isRunning: Bool
     @Binding var isPaused: Bool
     @Binding var timer: Timer?
-    
+    let onStop: (Double) -> Void
+
     private var timeDisplay: String {
         let total = Int(elapsedSeconds)
         let hrs = total / 3600
@@ -24,7 +23,7 @@ struct RunningView: View {
         }
         return String(format: "%02d:%02d", mins, secs)
     }
-    
+
     var body: some View {
         VStack(spacing: 8) {
             Text(client)
@@ -32,18 +31,17 @@ struct RunningView: View {
                 .foregroundStyle(.secondary)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
-            
+
             Text(timeDisplay)
                 .font(.system(size: 32, weight: .thin, design: .monospaced))
                 .accessibilityLabel("Elapsed time \(timeDisplay)")
                 .accessibilityAddTraits(.updatesFrequently)
-            
+
             Text(isPaused ? "Paused" : "Running")
                 .font(.caption2)
                 .foregroundStyle(isPaused ? .orange : .green)
-            
+
             HStack(spacing: 16) {
-                // Pause / Resume
                 Button {
                     if isPaused {
                         isPaused = false
@@ -64,14 +62,15 @@ struct RunningView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isPaused ? "Resume timer" : "Pause timer")
-                
-                // Stop
+
                 Button {
+                    let hours = elapsedSeconds / 3600
                     timer?.invalidate()
                     timer = nil
                     isRunning = false
                     isPaused = false
                     elapsedSeconds = 0
+                    onStop(hours)
                 } label: {
                     Image(systemName: "stop.fill")
                         .font(.title3)
@@ -80,7 +79,7 @@ struct RunningView: View {
                         .background(Circle().fill(Color.red))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Stop timer")
+                .accessibilityLabel("Stop timer and save session")
             }
         }
         .padding(.horizontal, 4)
