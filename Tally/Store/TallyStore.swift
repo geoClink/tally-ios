@@ -20,6 +20,7 @@ class TallyStore {
     var clientGoals: [ClientGoal] = []
     var weeklyGoal: Double = 5.0
     var isLoading = false
+    var currentUserId: String?
     
     var weeklyHours: Double {
         let calendar = Calendar.current
@@ -226,6 +227,8 @@ class TallyStore {
 
     func loadWorkspaces() async {
         guard let user = try? await supabase.auth.user() else { return }
+        currentUserId = user.id.uuidString
+        await acceptPendingInvites(for: user)
         do {
             let all: [WorkspaceModel] = try await supabase
                 .from("workspaces")
@@ -234,7 +237,6 @@ class TallyStore {
                 .value
             workspaces = all
             await loadWorkspaceMembers()
-            _ = user
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading workspaces")
         }
@@ -301,6 +303,61 @@ class TallyStore {
             await loadWorkspaces()
         } catch {
             ErrorHandler.shared.handle(error, context: "Accepting invite")
+        }
+    }
+
+    func removeMember(_ member: WorkspaceMember) async {
+        do {
+            try await supabase
+                .from("workspace_members")
+                .delete()
+                .eq("id", value: member.id.uuidString)
+                .execute()
+            await loadWorkspaceMembers()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Removing member")
+        }
+    }
+
+    func changeMemberRole(_ member: WorkspaceMember, to role: String) async {
+        do {
+            try await supabase
+                .from("workspace_members")
+                .update(["role": role])
+                .eq("id", value: member.id.uuidString)
+                .execute()
+            await loadWorkspaceMembers()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Changing member role")
+        }
+    }
+
+    func isOwner(of workspace: WorkspaceModel) -> Bool {
+        currentUserId == workspace.ownerId
+    }
+
+    private func acceptPendingInvites(for user: User) async {
+        guard let email = user.email else { return }
+        do {
+            let invited: [WorkspaceMember] = try await supabase
+                .from("workspace_members")
+                .select()
+                .eq("invited_email", value: email)
+                .execute()
+                .value
+
+            for member in invited where member.acceptedAt == nil {
+                try await supabase
+                    .from("workspace_members")
+                    .update([
+                        "accepted_at": ISO8601DateFormatter().string(from: Date()),
+                        "user_id": user.id.uuidString
+                    ])
+                    .eq("id", value: member.id.uuidString)
+                    .execute()
+            }
+        } catch {
+            // Silent — invites will be accepted on next launch
         }
     }
 }
