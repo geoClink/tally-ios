@@ -60,6 +60,9 @@ struct ContentView: View {
             isAuthenticated = false
         }
         isLoading = false
+        if isAuthenticated {
+            await PurchaseManager.shared.refresh()
+        }
     }
 }
 

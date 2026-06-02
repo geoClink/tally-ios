@@ -256,10 +256,14 @@ class TallyStore {
     }
 
     func acceptInvite(memberId: UUID) async {
+        guard let user = try? await supabase.auth.user() else { return }
         do {
             try await supabase
                 .from("workspace_members")
-                .update(["accepted_at": ISO8601DateFormatter().string(from: Date())])
+                .update([
+                    "accepted_at": ISO8601DateFormatter().string(from: Date()),
+                    "user_id": user.id.uuidString
+                ])
                 .eq("id", value: memberId.uuidString)
                 .execute()
             await loadWorkspaces()

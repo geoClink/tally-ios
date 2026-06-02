@@ -5,6 +5,7 @@
 
 import StoreKit
 import Foundation
+import Supabase
 
 enum Tier: Int, Comparable {
     case free = 0
@@ -106,20 +107,108 @@ final class PurchaseManager {
         products.sort { $0.price < $1.price }
     }
 
+    private var businessExpirationDate: Date?
+
     private func checkEntitlements() async {
-        var hasBusiness = false
-        var hasPro = false
+        var storeKitTier: Tier = .free
+        var expirationDate: Date?
         for await result in Transaction.currentEntitlements {
             if let tx = try? verified(result) {
                 if tx.revocationDate != nil { continue }
                 switch tx.productID {
-                case Self.businessID: hasBusiness = true
-                case Self.proID:      hasPro = true
+                case Self.businessID:
+                    storeKitTier = .business
+                    expirationDate = tx.expirationDate
+                case Self.proID:
+                    if storeKitTier < .pro { storeKitTier = .pro }
                 default: break
                 }
             }
         }
-        currentTier = hasBusiness ? .business : hasPro ? .pro : .free
+        businessExpirationDate = expirationDate
+
+        let stripeTier = await fetchStripeTier()
+        currentTier = max(storeKitTier, stripeTier)
+        await syncSubscriptionToSupabase()
+    }
+
+    private func fetchStripeTier() async -> Tier {
+        guard let user = try? await supabase.auth.user() else {
+            print("[Tally] fetchStripeTier: no authenticated user")
+            return .free
+        }
+        print("[Tally] fetchStripeTier: user_id = \(user.id.uuidString)")
+        do {
+            let rows: [SubscriptionRow] = try await supabase
+                .from("subscriptions")
+                .select()
+                .eq("user_id", value: user.id.uuidString)
+                .eq("source", value: "stripe")
+                .execute()
+                .value
+
+            var best: Tier = .free
+            for row in rows {
+                if let expires = row.expiresAt, expires < Date() { continue }
+                let tier: Tier = switch row.tier {
+                    case "business" : .business
+                    case "pro"      : .pro
+                    default         : .free
+                }
+                if tier > best { best = tier }
+            }
+            print("[Tally] fetchStripeTier: resolved tier = \(best)")
+            return best
+        } catch {
+            print("[Tally] fetchStripeTier error: \(error)")
+            return .free
+        }
+    }
+
+    private func syncSubscriptionToSupabase() async {
+        guard let user = try? await supabase.auth.user() else { return }
+
+        let tierString: String
+        switch currentTier {
+        case .free: tierString = "free"
+        case .pro: tierString = "pro"
+        case .business: tierString = "business"
+        }
+
+        do {
+            let existing: [SubscriptionRow] = try await supabase
+                .from("subscriptions")
+                .select()
+                .eq("user_id", value: user.id.uuidString)
+                .eq("source", value: "ios")
+                .execute()
+                .value
+
+            if let row = existing.first {
+                let update = SubscriptionUpdate(
+                    tier: tierString,
+                    expiresAt: businessExpirationDate
+                )
+                try await supabase
+                    .from("subscriptions")
+                    .update(update)
+                    .eq("id", value: row.id.uuidString)
+                    .execute()
+            } else if currentTier != .free {
+                let insert = SubscriptionInsert(
+                    userId: user.id.uuidString,
+                    tier: tierString,
+                    source: "ios",
+                    expiresAt: businessExpirationDate
+                )
+                try await supabase
+                    .from("subscriptions")
+                    .insert(insert)
+                    .execute()
+            }
+        } catch {
+            // Sync failure shouldn't block the purchase flow
+        }
     }
 
     private func listenForTransactions() -> Task<Void, Never> {
@@ -139,6 +228,48 @@ final class PurchaseManager {
         case .unverified: throw StoreError.failedVerification
         case .verified(let val): return val
         }
+    }
+}
+
+// MARK: - Subscription Sync Models
+
+struct SubscriptionRow: Codable, Identifiable {
+    let id: UUID
+    let userId: String
+    let tier: String
+    let source: String
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case tier
+        case source
+        case expiresAt = "expires_at"
+    }
+}
+
+struct SubscriptionInsert: Codable {
+    let userId: String
+    let tier: String
+    let source: String
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
+        case tier
+        case source
+        case expiresAt = "expires_at"
+    }
+}
+
+struct SubscriptionUpdate: Codable {
+    let tier: String
+    let expiresAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case tier
+        case expiresAt = "expires_at"
     }
 }
 
