@@ -71,6 +71,15 @@ WatchConnectivity.framework must be added to both the Tally and Tally Watch Watc
 
 `tally://` — used for Supabase auth deep links and widget/Live Activity tap-throughs.
 
+## Web App
+
+The web companion dashboard is available at:
+[github.com/geoClink/tally-web](https://github.com/geoClink/tally-web)
+
+Live at: https://tally-web-nu.vercel.app
+
+Both apps share the same Supabase backend. See the [iOS compatibility guide](https://github.com/geoClink/tally-web/blob/main/supabase/ios-compatibility.md) for backend integration details.
+
 ## Supabase project
 
 Americas, us-east-1 — project name: Tally
