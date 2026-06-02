@@ -45,6 +45,18 @@ struct HomeView: View {
                     Text("This Week")
                         .font(.headline)
                     ProgressBarView(value: tallyStore.weeklyHours, goal: tallyStore.weeklyGoal)
+
+                    ForEach(tallyStore.clientGoals) { goal in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(goal.client)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            ProgressBarView(
+                                value: tallyStore.weeklyHours(for: goal.client),
+                                goal: goal.weeklyHours
+                            )
+                        }
+                    }
                 }
                 .padding()
                 .background(RoundedRectangle(cornerRadius: 16).fill(Color.gray.opacity(0.1)))

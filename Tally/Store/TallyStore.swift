@@ -17,6 +17,7 @@ class TallyStore {
         PurchaseManager.shared.applyHistoryLimit(to: sessions)
     }
     var clientRates: [ClientRate] = []
+    var clientGoals: [ClientGoal] = []
     var weeklyGoal: Double = 5.0
     var isLoading = false
     
@@ -126,16 +127,17 @@ class TallyStore {
                 .value
             if let config = response.first {
                 weeklyGoal = config.weeklyGoal
+                clientGoals = config.clientGoals ?? []
             }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading config")
         }
     }
-    
+
     func saveGoal(_ goal: Double) async {
         weeklyGoal = goal
         do {
-            let config = ConfigInsert(weeklyGoal: goal)
+            let config = ConfigInsert(weeklyGoal: goal, clientGoals: clientGoals)
             try await supabase
                 .from("config")
                 .upsert(config)
@@ -143,6 +145,36 @@ class TallyStore {
         } catch {
             ErrorHandler.shared.handle(error, context: "Saving goal")
         }
+    }
+
+    func saveClientGoal(client: String, weeklyHours: Double) async {
+        var updated = clientGoals.filter { $0.client != client }
+        if weeklyHours > 0 {
+            updated.append(ClientGoal(client: client, weeklyHours: weeklyHours))
+        }
+        clientGoals = updated
+        do {
+            let config = ConfigInsert(weeklyGoal: weeklyGoal, clientGoals: clientGoals)
+            try await supabase
+                .from("config")
+                .upsert(config)
+                .execute()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Saving client goal")
+        }
+    }
+
+    func weeklyHours(for client: String) -> Double {
+        let calendar = Calendar.current
+        let now = Date()
+        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        return sessions
+            .filter { $0.client == client && $0.startTime >= monday }
+            .reduce(0) { $0 + $1.hours }
+    }
+
+    func clientGoal(for client: String) -> ClientGoal? {
+        clientGoals.first { $0.client == client }
     }
     
     func writeWidgetSummary() {
@@ -320,17 +352,32 @@ struct SessionInsert: Codable {
 struct ConfigModel: Codable {
     let id: UUID
     let weeklyGoal: Double
-    
+    let clientGoals: [ClientGoal]?
+
     enum CodingKeys: String, CodingKey {
         case id
         case weeklyGoal = "weekly_goal"
+        case clientGoals = "client_goals"
     }
 }
 
 struct ConfigInsert: Codable {
     let weeklyGoal: Double
-    
+    let clientGoals: [ClientGoal]?
+
     enum CodingKeys: String, CodingKey {
         case weeklyGoal = "weekly_goal"
+        case clientGoals = "client_goals"
+    }
+}
+
+struct ClientGoal: Codable, Identifiable, Equatable {
+    var id: String { client }
+    let client: String
+    let weeklyHours: Double
+
+    enum CodingKeys: String, CodingKey {
+        case client
+        case weeklyHours = "weekly_hours"
     }
 }
