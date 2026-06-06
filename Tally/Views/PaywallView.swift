@@ -58,6 +58,8 @@ struct PaywallView: View {
                         ) {
                             if let product = purchases.proProduct {
                                 Task { await purchases.purchase(product) }
+                            } else {
+                                purchases.setError("Unable to load this product. Please try again later.")
                             }
                         }
 
@@ -75,6 +77,8 @@ struct PaywallView: View {
                         ) {
                             if let product = purchases.businessProduct {
                                 Task { await purchases.purchase(product) }
+                            } else {
+                                purchases.setError("Unable to load this product. Please try again later.")
                             }
                         }
                     }
@@ -88,6 +92,23 @@ struct PaywallView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
+
+                    // Subscription details
+                    VStack(spacing: 4) {
+                        if let business = purchases.businessProduct {
+                            Text("Tally Business auto-renews at \(business.displayPrice)/month until cancelled.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        HStack(spacing: 12) {
+                            Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
+                            Text("·").foregroundStyle(.secondary)
+                            Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdfma.html")!)
+                        }
+                        .font(.caption2)
+                    }
+                    .padding(.horizontal)
                     .padding(.bottom)
                 }
             }

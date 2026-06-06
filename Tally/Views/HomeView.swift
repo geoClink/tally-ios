@@ -21,6 +21,7 @@ struct HomeView: View {
     @State private var selectedClient = ""
     @State private var taskNoteText = ""
     @State private var pendingHours: Double = 0
+    @State private var showDeleteConfirmation = false
     
     private var timerFontSize: CGFloat {
         switch dynamicTypeSize {
@@ -193,6 +194,11 @@ struct HomeView: View {
                         } label: {
                             Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         }
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            Label("Delete Account", systemImage: "trash")
+                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
@@ -202,6 +208,21 @@ struct HomeView: View {
             .task {
                 await applyFocusFilter()
                 checkPendingIntents()
+            }
+            .alert("Delete Account", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    Task {
+                        do {
+                            try await tallyStore.deleteAccount()
+                            NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
+                        } catch {
+                            ErrorHandler.shared.handle(error, context: "Deleting account")
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will permanently delete your account and all your data. This action cannot be undone.")
             }
             .sheet(isPresented: $showClientPicker) {
                 ClientPickerView(

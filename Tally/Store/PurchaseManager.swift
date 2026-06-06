@@ -25,7 +25,7 @@ final class PurchaseManager {
     static let shared = PurchaseManager()
 
     static let proID      = "name.GeorgeClinkscales.Tally.pro"
-    static let businessID = "name.GeorgeClinkscales.Tally.business.monthly"
+    static let businessID = "name.GeorgeClinkscales.Tally.businessmonthly"
 
     private(set) var currentTier: Tier = .free
     private(set) var products: [Product] = []
@@ -83,6 +83,10 @@ final class PurchaseManager {
         errorMessage = nil
     }
 
+    func setError(_ message: String) {
+        errorMessage = message
+    }
+
     // MARK: - Feature Gates
 
     func canAddClient(existingCount: Int) -> Bool {
@@ -134,10 +138,8 @@ final class PurchaseManager {
 
     private func fetchStripeTier() async -> Tier {
         guard let user = try? await supabase.auth.user() else {
-            print("[Tally] fetchStripeTier: no authenticated user")
             return .free
         }
-        print("[Tally] fetchStripeTier: user_id = \(user.id.uuidString)")
         do {
             let rows: [SubscriptionRow] = try await supabase
                 .from("subscriptions")
@@ -157,10 +159,8 @@ final class PurchaseManager {
                 }
                 if tier > best { best = tier }
             }
-            print("[Tally] fetchStripeTier: resolved tier = \(best)")
             return best
         } catch {
-            print("[Tally] fetchStripeTier error: \(error)")
             return .free
         }
     }

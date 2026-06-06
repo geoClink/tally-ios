@@ -336,6 +336,28 @@ class TallyStore {
         currentUserId == workspace.ownerId
     }
 
+    func deleteAccount() async throws {
+        guard let user = try? await supabase.auth.user() else { return }
+        let userId = user.id.uuidString
+
+        try await supabase.from("sessions").delete().eq("user_id", value: userId).execute()
+        try await supabase.from("config").delete().eq("user_id", value: userId).execute()
+        try await supabase.from("client_rates").delete().eq("user_id", value: userId).execute()
+        try await supabase.from("workspace_members").delete().eq("user_id", value: userId).execute()
+        try await supabase.from("subscriptions").delete().eq("user_id", value: userId).execute()
+
+        let ownedWorkspaces: [WorkspaceModel] = try await supabase
+            .from("workspaces").select().eq("owner_id", value: userId).execute().value
+        for ws in ownedWorkspaces {
+            try await supabase.from("workspace_members").delete().eq("workspace_id", value: ws.id.uuidString).execute()
+            try await supabase.from("workspaces").delete().eq("id", value: ws.id.uuidString).execute()
+        }
+
+        try await supabase.from("profiles").delete().eq("id", value: userId).execute()
+        try await supabase.rpc("delete_own_account").execute()
+        try await supabase.auth.signOut()
+    }
+
     private func acceptPendingInvites(for user: User) async {
         guard let email = user.email else { return }
         do {
