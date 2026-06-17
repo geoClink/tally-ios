@@ -13,19 +13,8 @@ struct ExportOptionsView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Export Hours")
-                    .font(.headline)
-                Spacer()
-                Button("Cancel") { dismiss() }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-
-            Divider()
-
-            List {
+        NavigationStack {
+            Form {
                 Section("Export by time range") {
                     ForEach(ExportRange.allCases, id: \.self) { range in
                         Button {
@@ -63,8 +52,13 @@ struct ExportOptionsView: View {
                     }
                 }
             }
-            .listStyle(.inset)
+            .navigationTitle("Export Hours")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
         }
-        .frame(minHeight: 420)
     }
 }

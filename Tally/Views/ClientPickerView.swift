@@ -33,89 +33,121 @@ struct ClientPickerView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
-                Text("Who are you working on?")
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-                
+        VStack(spacing: 20) {
+            // Handle bar
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
+
+            Text("Who are you working for?")
+                .font(.title3.bold())
+                .accessibilityAddTraits(.isHeader)
+
+            VStack(spacing: 12) {
                 if !recentClients.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 4)
+
                         ForEach(recentClients, id: \.self) { client in
                             Button {
                                 selectedClient = client
                                 customClient = ""
+                                isCustomFocused = false
                             } label: {
                                 HStack {
+                                    Image(systemName: "person.fill")
+                                        .foregroundStyle(selectedClient == client ? .blue : .secondary)
+                                        .frame(width: 20)
                                     Text(client)
                                         .foregroundStyle(.primary)
+                                        .fontWeight(selectedClient == client ? .medium : .regular)
                                     Spacer()
                                     if selectedClient == client {
-                                        Image(systemName: "checkmark")
+                                        Image(systemName: "checkmark.circle.fill")
                                             .foregroundStyle(.blue)
                                             .accessibilityHidden(true)
                                     }
                                 }
-                                .padding()
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(selectedClient == client ? Color.blue.opacity(0.15) : Color.gray.opacity(0.1))
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(selectedClient == client ? Color.blue.opacity(0.1) : Color(.secondarySystemBackground))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(selectedClient == client ? Color.blue.opacity(0.4) : Color.clear, lineWidth: 1.5)
                                 )
                             }
+                            .buttonStyle(.plain)
                             .accessibilityLabel(client)
                             .accessibilityHint(selectedClient == client ? "Selected" : "Tap to select \(client)")
                             .accessibilityAddTraits(selectedClient == client ? .isSelected : [])
                         }
                     }
                 }
-                
-                TextField("Or type a new client...", text: $customClient)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($isCustomFocused)
-                    .accessibilityLabel("New client name")
-                    .accessibilityHint("Type a client name to start tracking")
-                    .onSubmit {
-                        if !customClient.isEmpty {
-                            selectedClient = customClient
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("New client")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 4)
+
+                    TextField("Type a client name...", text: $customClient)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.secondarySystemBackground))
+                        )
+                        .focused($isCustomFocused)
+                        .accessibilityLabel("New client name")
+                        .onSubmit {
+                            if !customClient.isEmpty { selectedClient = customClient }
                         }
-                    }
-                    .onChange(of: customClient) {
-                        if !customClient.isEmpty {
-                            selectedClient = customClient
+                        .onChange(of: customClient) {
+                            if !customClient.isEmpty { selectedClient = customClient }
                         }
-                    }
-                
-                if blockedByFreeLimit {
-                    Button { showPaywall = true } label: {
-                        Label("Upgrade for More Clients", systemImage: "lock.fill")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.purple))
-                    }
-                    .popoverTip(clientLimitTip)
-                } else {
-                    Button {
-                        onStart()
-                    } label: {
-                        Text("Start Tally")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(canStart ? Color.blue : Color.gray)
-                            )
-                    }
-                    .disabled(!canStart)
-                    .accessibilityLabel("Start Tally")
-                    .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")
                 }
             }
-            .padding()
-            .sheet(isPresented: $showPaywall) { PaywallView() }
+
+            Spacer()
+
+            if blockedByFreeLimit {
+                Button { showPaywall = true } label: {
+                    Label("Upgrade for More Clients", systemImage: "lock.fill")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.purple))
+                }
+                .popoverTip(clientLimitTip)
+            } else {
+                Button {
+                    onStart()
+                } label: {
+                    Label("Start Tally", systemImage: "play.fill")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(canStart ? Color.green : Color.gray.opacity(0.4))
+                        )
+                }
+                .disabled(!canStart)
+                .accessibilityLabel("Start Tally")
+                .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")
+            }
         }
+        .padding(.horizontal)
+        .padding(.bottom, 24)
+        .sheet(isPresented: $showPaywall) { PaywallView() }
     }
 }

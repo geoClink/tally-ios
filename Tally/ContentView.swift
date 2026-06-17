@@ -32,6 +32,8 @@ struct ContentView: View {
                         .tabItem { Label("Activity", systemImage: "calendar") }
                     TeamView()
                         .tabItem { Label("Team", systemImage: "person.3.fill") }
+                    AccountView()
+                        .tabItem { Label("Account", systemImage: "person.circle") }
                 }
             }
         }
@@ -61,7 +63,7 @@ struct ContentView: View {
         }
         isLoading = false
         if isAuthenticated {
-            await PurchaseManager.shared.refresh()
+            Task { await PurchaseManager.shared.refresh() }
         }
     }
 }

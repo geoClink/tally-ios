@@ -21,8 +21,6 @@ struct HomeView: View {
     @State private var selectedClient = ""
     @State private var taskNoteText = ""
     @State private var pendingHours: Double = 0
-    @State private var showDeleteConfirmation = false
-    
     private var timerFontSize: CGFloat {
         switch dynamicTypeSize {
         case .xSmall, .small: return 52
@@ -185,20 +183,6 @@ struct HomeView: View {
                         } label: {
                             Label("Set Weekly Goal", systemImage: "target")
                         }
-                        Divider()
-                        Button(role: .destructive) {
-                            Task {
-                                try? await supabase.auth.signOut()
-                                NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
-                            }
-                        } label: {
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                        Button(role: .destructive) {
-                            showDeleteConfirmation = true
-                        } label: {
-                            Label("Delete Account", systemImage: "trash")
-                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
@@ -209,21 +193,6 @@ struct HomeView: View {
                 await applyFocusFilter()
                 checkPendingIntents()
             }
-            .alert("Delete Account", isPresented: $showDeleteConfirmation) {
-                Button("Delete", role: .destructive) {
-                    Task {
-                        do {
-                            try await tallyStore.deleteAccount()
-                            NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
-                        } catch {
-                            ErrorHandler.shared.handle(error, context: "Deleting account")
-                        }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This will permanently delete your account and all your data. This action cannot be undone.")
-            }
             .sheet(isPresented: $showClientPicker) {
                 ClientPickerView(
                     selectedClient: $selectedClient,
@@ -233,6 +202,7 @@ struct HomeView: View {
                     showClientPicker = false
                 }
                 .presentationDetents([.medium])
+                .presentationBackground(Color(.systemBackground))
             }
             .sheet(isPresented: $showManualEntry) {
                 ManualEntryView()
@@ -241,56 +211,27 @@ struct HomeView: View {
                 GoalSettingView()
             }
             .sheet(isPresented: $showTaskNote) {
-                NavigationStack {
-                    VStack(spacing: 20) {
-                        Text("What did you work on?")
-                            .font(.headline)
-                        
-                        TextField("e.g. Built login screen, fixed API bug...", text: $taskNoteText, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            .lineLimit(3...6)
-                            .padding(.horizontal)
-                            .accessibilityLabel("Task note")
-                            .accessibilityHint("Optional description of what you worked on")
-                        
-                        Text("Session: \(selectedClient) — \(TimeFormatter.shortFormat(pendingHours))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        Spacer()
-                    }
-                    .padding(.top, 24)
-                    .navigationTitle("Add Note")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Skip") {
-                                Task {
-                                    await tallyStore.addSession(
-                                        client: selectedClient,
-                                        hours: pendingHours,
-                                        taskNote: nil
-                                    )
-                                    taskNoteText = ""
-                                    showTaskNote = false
-                                }
-                            }
+                TaskNoteSheet(
+                    client: selectedClient,
+                    hours: pendingHours,
+                    noteText: $taskNoteText,
+                    onSkip: {
+                        Task {
+                            await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: nil)
+                            taskNoteText = ""
+                            showTaskNote = false
                         }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
-                                Task {
-                                    await tallyStore.addSession(
-                                        client: selectedClient,
-                                        hours: pendingHours,
-                                        taskNote: taskNoteText.isEmpty ? nil : taskNoteText
-                                    )
-                                    taskNoteText = ""
-                                    showTaskNote = false
-                                }
-                            }
+                    },
+                    onSave: {
+                        Task {
+                            await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: taskNoteText.isEmpty ? nil : taskNoteText)
+                            taskNoteText = ""
+                            showTaskNote = false
                         }
                     }
-                }
+                )
                 .presentationDetents([.medium])
+                .presentationBackground(Color(.systemBackground))
             }
         }
     }

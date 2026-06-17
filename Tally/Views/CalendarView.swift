@@ -13,7 +13,12 @@ struct CalendarView: View {
     
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
-    private let weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+    private var weekdays: [String] {
+        let symbols = calendar.shortWeekdaySymbols
+        let first = calendar.firstWeekday - 1
+        return Array(symbols[first...] + symbols[..<first])
+    }
     
     private var daysInMonth: [Date?] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth),
@@ -161,6 +166,11 @@ struct CalendarView: View {
             }
             .padding(.top)
             .navigationTitle("Activity")
+            .task {
+                if tallyStore.sessions.isEmpty {
+                    await tallyStore.loadSessions()
+                }
+            }
         }
     }
 }

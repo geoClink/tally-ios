@@ -8,12 +8,14 @@ import Foundation
 struct WorkspaceModel: Identifiable, Codable, Hashable {
     let id: UUID
     let name: String
+    let clientName: String
     let ownerId: String
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id
         case name
+        case clientName = "client_name"
         case ownerId    = "owner_id"
         case createdAt  = "created_at"
     }
@@ -53,10 +55,12 @@ struct WorkspaceInviteInsert: Codable {
 
 struct WorkspaceInsert: Codable {
     let name: String
+    let clientName: String
     let ownerId: String
 
     enum CodingKeys: String, CodingKey {
         case name
-        case ownerId = "owner_id"
+        case clientName = "client_name"
+        case ownerId    = "owner_id"
     }
 }

@@ -241,6 +241,9 @@ struct ReportsView: View {
                 isLoading = true
                 await tallyStore.loadSessions()
                 isLoading = false
+                if purchases.canExportCSV {
+                    exportTip.invalidate(reason: .actionPerformed)
+                }
             }
         }
     }

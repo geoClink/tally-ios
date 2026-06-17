@@ -21,6 +21,7 @@ class TallyStore {
     var weeklyGoal: Double = 5.0
     var isLoading = false
     var currentUserId: String?
+    var currentUserEmail: String?
     
     var weeklyHours: Double {
         let calendar = Calendar.current
@@ -224,10 +225,12 @@ class TallyStore {
 
     var workspaces: [WorkspaceModel] = []
     var workspaceMembers: [WorkspaceMember] = []
+    var teamSessions: [String: [SessionModel]] = [:]
 
     func loadWorkspaces() async {
         guard let user = try? await supabase.auth.user() else { return }
         currentUserId = user.id.uuidString
+        currentUserEmail = user.email
         await acceptPendingInvites(for: user)
         do {
             let all: [WorkspaceModel] = try await supabase
@@ -258,10 +261,10 @@ class TallyStore {
         }
     }
 
-    func createWorkspace(name: String) async {
+    func createWorkspace(name: String, clientName: String) async {
         guard let user = try? await supabase.auth.user() else { return }
         do {
-            let insert = WorkspaceInsert(name: name, ownerId: user.id.uuidString)
+            let insert = WorkspaceInsert(name: name, clientName: clientName, ownerId: user.id.uuidString)
             try await supabase
                 .from("workspaces")
                 .insert(insert)
@@ -332,8 +335,114 @@ class TallyStore {
         }
     }
 
+    func loadTeamSessions(for workspace: WorkspaceModel) async {
+        let memberIds = workspaceMembers
+            .filter { $0.workspaceId == workspace.id && !$0.isPending }
+            .compactMap { $0.userId }
+        guard !memberIds.isEmpty else { return }
+
+        do {
+            let fetched: [SessionModel] = try await supabase
+                .from("sessions")
+                .select()
+                .in("user_id", values: memberIds)
+                .eq("client", value: workspace.clientName)
+                .execute()
+                .value
+            var grouped: [String: [SessionModel]] = [:]
+            for session in fetched {
+                grouped[session.userId, default: []].append(session)
+            }
+            teamSessions = grouped
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Loading team sessions")
+        }
+    }
+
+    func teamWeeklyHours(for userId: String) -> Double {
+        let monday = Calendar.current.date(
+            from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        ) ?? Date()
+        return (teamSessions[userId] ?? [])
+            .filter { $0.startTime >= monday }
+            .reduce(0) { $0 + $1.hours }
+    }
+
+    func teamAllTimeHours(for userId: String) -> Double {
+        (teamSessions[userId] ?? []).reduce(0) { $0 + $1.hours }
+    }
+
+    func teamTotalWeeklyHours(for workspace: WorkspaceModel) -> Double {
+        workspaceMembers
+            .filter { $0.workspaceId == workspace.id && !$0.isPending }
+            .compactMap { $0.userId }
+            .reduce(0) { $0 + teamWeeklyHours(for: $1) }
+    }
+
+    func teamTotalAllTimeHours(for workspace: WorkspaceModel) -> Double {
+        workspaceMembers
+            .filter { $0.workspaceId == workspace.id && !$0.isPending }
+            .compactMap { $0.userId }
+            .reduce(0) { $0 + teamAllTimeHours(for: $1) }
+    }
+
+    func leaveWorkspace(_ workspace: WorkspaceModel) async {
+        guard let user = try? await supabase.auth.user() else { return }
+        do {
+            try await supabase
+                .from("workspace_members")
+                .delete()
+                .eq("workspace_id", value: workspace.id.uuidString)
+                .eq("user_id", value: user.id.uuidString)
+                .execute()
+            await loadWorkspaces()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Leaving workspace")
+        }
+    }
+
     func isOwner(of workspace: WorkspaceModel) -> Bool {
-        currentUserId == workspace.ownerId
+        currentUserId?.lowercased() == workspace.ownerId.lowercased()
+    }
+
+    func isAdmin(of workspace: WorkspaceModel) -> Bool {
+        workspaceMembers.first {
+            $0.workspaceId == workspace.id &&
+            $0.userId?.lowercased() == currentUserId?.lowercased() &&
+            $0.role == "admin" &&
+            $0.acceptedAt != nil
+        } != nil
+    }
+
+    func updateWorkspace(_ workspace: WorkspaceModel, name: String, clientName: String) async {
+        do {
+            try await supabase
+                .from("workspaces")
+                .update(["name": name, "client_name": clientName])
+                .eq("id", value: workspace.id.uuidString)
+                .execute()
+            await loadWorkspaces()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Updating workspace")
+        }
+    }
+
+    func deleteWorkspace(_ workspace: WorkspaceModel) async {
+        do {
+            try await supabase
+                .from("workspace_members")
+                .delete()
+                .eq("workspace_id", value: workspace.id.uuidString)
+                .execute()
+            try await supabase
+                .from("workspaces")
+                .delete()
+                .eq("id", value: workspace.id.uuidString)
+                .execute()
+            await loadWorkspaces()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Deleting workspace")
+        }
     }
 
     func deleteAccount() async throws {
@@ -386,6 +495,7 @@ class TallyStore {
 
 struct SessionModel: Codable, Identifiable {
     let id: UUID
+    let userId: String
     let client: String
     let startTime: Date
     let endTime: Date?
@@ -393,9 +503,10 @@ struct SessionModel: Codable, Identifiable {
     let date: String?
     let taskNote: String?
     let isManual: Bool
-    
+
     enum CodingKeys: String, CodingKey {
         case id
+        case userId = "user_id"
         case client
         case startTime = "start_time"
         case endTime = "end_time"
