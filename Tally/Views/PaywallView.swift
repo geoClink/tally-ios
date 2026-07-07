@@ -56,10 +56,15 @@ struct PaywallView: View {
                             ],
                             isCurrent: purchases.currentTier == .pro
                         ) {
-                            if let product = purchases.proProduct {
-                                Task { await purchases.purchase(product) }
-                            } else {
-                                purchases.setError("Unable to load this product. Please try again later.")
+                            Task {
+                                if purchases.proProduct == nil {
+                                    await purchases.refresh()
+                                }
+                                if let product = purchases.proProduct {
+                                    await purchases.purchase(product)
+                                } else {
+                                    purchases.setError("Unable to load this product. Please check your connection and try again.")
+                                }
                             }
                         }
 
@@ -75,10 +80,15 @@ struct PaywallView: View {
                             ],
                             isCurrent: purchases.currentTier == .business
                         ) {
-                            if let product = purchases.businessProduct {
-                                Task { await purchases.purchase(product) }
-                            } else {
-                                purchases.setError("Unable to load this product. Please try again later.")
+                            Task {
+                                if purchases.businessProduct == nil {
+                                    await purchases.refresh()
+                                }
+                                if let product = purchases.businessProduct {
+                                    await purchases.purchase(product)
+                                } else {
+                                    purchases.setError("Unable to load this product. Please check your connection and try again.")
+                                }
                             }
                         }
                     }
@@ -128,10 +138,18 @@ struct PaywallView: View {
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
             }
-            .alert("Purchase Error", isPresented: .constant(purchases.errorMessage != nil)) {
+            .alert("Purchase Error", isPresented: $showError) {
                 Button("OK") { purchases.clearError() }
             } message: {
                 Text(purchases.errorMessage ?? "")
+            }
+            .onChange(of: purchases.errorMessage) { _, newValue in
+                showError = newValue != nil
+            }
+            .task {
+                if purchases.products.isEmpty {
+                    await purchases.refresh()
+                }
             }
             .onChange(of: purchases.currentTier) { _, tier in
                 if tier > .free { dismiss() }

@@ -137,12 +137,13 @@ class TallyStore {
     }
 
     func saveGoal(_ goal: Double) async {
+        guard let user = try? await supabase.auth.user() else { return }
         weeklyGoal = goal
         do {
-            let config = ConfigInsert(weeklyGoal: goal, clientGoals: clientGoals)
+            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: goal, clientGoals: clientGoals)
             try await supabase
                 .from("config")
-                .upsert(config)
+                .upsert(config, onConflict: "user_id")
                 .execute()
         } catch {
             ErrorHandler.shared.handle(error, context: "Saving goal")
@@ -150,16 +151,17 @@ class TallyStore {
     }
 
     func saveClientGoal(client: String, weeklyHours: Double) async {
+        guard let user = try? await supabase.auth.user() else { return }
         var updated = clientGoals.filter { $0.client != client }
         if weeklyHours > 0 {
             updated.append(ClientGoal(client: client, weeklyHours: weeklyHours))
         }
         clientGoals = updated
         do {
-            let config = ConfigInsert(weeklyGoal: weeklyGoal, clientGoals: clientGoals)
+            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: weeklyGoal, clientGoals: clientGoals)
             try await supabase
                 .from("config")
-                .upsert(config)
+                .upsert(config, onConflict: "user_id")
                 .execute()
         } catch {
             ErrorHandler.shared.handle(error, context: "Saving client goal")
@@ -552,10 +554,12 @@ struct ConfigModel: Codable {
 }
 
 struct ConfigInsert: Codable {
+    let userId: String
     let weeklyGoal: Double
     let clientGoals: [ClientGoal]?
 
     enum CodingKeys: String, CodingKey {
+        case userId = "user_id"
         case weeklyGoal = "weekly_goal"
         case clientGoals = "client_goals"
     }

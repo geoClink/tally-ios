@@ -107,8 +107,20 @@ final class PurchaseManager {
     // MARK: - Private
 
     private func loadProducts() async {
-        products = (try? await Product.products(for: [Self.proID, Self.businessID])) ?? []
-        products.sort { $0.price < $1.price }
+        // Retry up to 3 times — sandbox StoreKit can be flaky
+        for attempt in 1...3 {
+            do {
+                products = try await Product.products(for: [Self.proID, Self.businessID])
+                products.sort { $0.price < $1.price }
+                return
+            } catch {
+                if attempt == 3 {
+                    products = []
+                } else {
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+        }
     }
 
     private var businessExpirationDate: Date?
