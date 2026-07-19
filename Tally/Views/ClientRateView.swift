@@ -13,7 +13,8 @@ struct ClientRateView: View {
     
     let client: String
     @State private var rateText: String = ""
-    
+    @State private var budgetText: String = ""
+
     var body: some View {
         NavigationStack {
             Form {
@@ -28,21 +29,32 @@ struct ClientRateView: View {
                             .accessibilityLabel("Hourly rate")
                             .accessibilityHint("Enter your hourly rate for \(client)")
                     }
-                    
+
                     if let rate = Double(rateText), rate > 0 {
                         Text("At \(rate.formatted(.currency(code: "USD"))) per hour")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
-                
-                Section("About Rates") {
-                    Text("Your hourly rate is used to calculate invoice totals. It's stored privately and never shared.")
+
+                Section("Project Budget") {
+                    HStack {
+                        TextField("No limit", text: $budgetText)
+                            #if os(iOS)
+                            .keyboardType(.decimalPad)
+                            #endif
+                            .accessibilityLabel("Budget hours")
+                            .accessibilityHint("Optional total hour budget for \(client)")
+                        Text("hours")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Set a total hour budget to track how much of the project is used.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Set Rate")
+            .navigationTitle("Client Settings")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -51,7 +63,8 @@ struct ClientRateView: View {
                     Button("Save") {
                         Task {
                             if let rate = Double(rateText) {
-                                await tallyStore.saveClientRate(client: client, hourlyRate: rate)
+                                let budget = Double(budgetText)
+                                await tallyStore.saveClientRate(client: client, hourlyRate: rate, budgetHours: budget)
                             }
                             dismiss()
                         }
@@ -61,8 +74,9 @@ struct ClientRateView: View {
             }
             .onAppear {
                 let existing = tallyStore.hourlyRate(for: client)
-                if existing > 0 {
-                    rateText = String(existing)
+                if existing > 0 { rateText = String(existing) }
+                if let budget = tallyStore.budgetHours(for: client) {
+                    budgetText = String(budget)
                 }
             }
         }

@@ -57,17 +57,24 @@ struct ReportsView: View {
                         Section("This Week") {
                             ProgressBarView(value: tallyStore.weeklyHours, goal: tallyStore.weeklyGoal)
                                 .padding(.vertical, 4)
-                            
+
                             if weeklyByClient.isEmpty {
                                 Text("No sessions this week")
                                     .foregroundStyle(.secondary)
                             } else {
                                 ForEach(weeklyByClient, id: \.0) { client, hours in
+                                    let rate = tallyStore.hourlyRate(for: client)
                                     HStack {
                                         Text(client)
                                         Spacer()
-                                        Text(TimeFormatter.shortFormat(hours))
-                                            .foregroundStyle(.secondary)
+                                        VStack(alignment: .trailing, spacing: 2) {
+                                            Text(TimeFormatter.shortFormat(hours))
+                                            if rate > 0 {
+                                                Text((hours * rate).formatted(.currency(code: "USD")))
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        .foregroundStyle(.secondary)
                                     }
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel("\(client): \(TimeFormatter.accessibleFormat(hours)) this week")
@@ -125,14 +132,21 @@ struct ReportsView: View {
                                     .foregroundStyle(.secondary)
                             } else {
                                 ForEach(allTimeByClient, id: \.0) { client, hours in
+                                    let rate = tallyStore.hourlyRate(for: client)
                                     NavigationLink {
                                         ClientDetailView(client: client)
                                     } label: {
                                         HStack {
                                             Text(client)
                                             Spacer()
-                                            Text(TimeFormatter.shortFormat(hours))
-                                                .foregroundStyle(.secondary)
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text(TimeFormatter.shortFormat(hours))
+                                                if rate > 0 {
+                                                    Text((hours * rate).formatted(.currency(code: "USD")))
+                                                        .font(.caption)
+                                                }
+                                            }
+                                            .foregroundStyle(.secondary)
                                         }
                                     }
                                     .accessibilityElement(children: .ignore)
@@ -151,8 +165,8 @@ struct ReportsView: View {
                             }
                         }
                         
-                        Section("Recent Sessions") {
-                            ForEach(tallyStore.sessions.prefix(20)) { session in
+                        Section(purchases.hasFullHistory ? "Sessions" : "Sessions (last 7 days)") {
+                            ForEach(tallyStore.visibleSessions) { session in
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(session.client)
@@ -176,7 +190,8 @@ struct ReportsView: View {
                             }
                             .onDelete { indexSet in
                                 if let index = indexSet.first {
-                                    sessionToDelete = tallyStore.sessions.prefix(20)[tallyStore.sessions.prefix(20).index(tallyStore.sessions.prefix(20).startIndex, offsetBy: index)]
+                                    let visible = tallyStore.visibleSessions
+                                    sessionToDelete = visible[visible.index(visible.startIndex, offsetBy: index)]
                                     showDeleteConfirmation = true
                                 }
                             }

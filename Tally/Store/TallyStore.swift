@@ -39,6 +39,10 @@ class TallyStore {
     func hourlyRate(for client: String) -> Double {
         clientRates.first { $0.client == client }?.hourlyRate ?? 0
     }
+
+    func budgetHours(for client: String) -> Double? {
+        clientRates.first { $0.client == client }?.budgetHours
+    }
     
     func loadSessions() async {
         do {
@@ -70,13 +74,14 @@ class TallyStore {
         }
     }
     
-    func saveClientRate(client: String, hourlyRate: Double) async {
+    func saveClientRate(client: String, hourlyRate: Double, budgetHours: Double? = nil) async {
         guard let user = try? await supabase.auth.user() else { return }
         do {
             let rate = ClientRateInsert(
                 userId: user.id.uuidString,
                 client: client,
-                hourlyRate: hourlyRate
+                hourlyRate: hourlyRate,
+                budgetHours: budgetHours
             )
             try await supabase
                 .from("client_rates")
@@ -128,8 +133,13 @@ class TallyStore {
                 .execute()
                 .value
             if let config = response.first {
-                weeklyGoal = config.weeklyGoal
-                clientGoals = config.clientGoals ?? []
+                let goals = config.clientGoals ?? []
+                clientGoals = goals
+                if !goals.isEmpty {
+                    weeklyGoal = goals.reduce(0) { $0 + $1.weeklyHours }
+                } else {
+                    weeklyGoal = config.weeklyGoal
+                }
             }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading config")

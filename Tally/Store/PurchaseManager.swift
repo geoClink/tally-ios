@@ -58,6 +58,12 @@ final class PurchaseManager {
             switch result {
             case .success(let verification):
                 let transaction = try verified(verification)
+                // Update tier immediately so the UI dismisses without waiting on Supabase sync
+                switch transaction.productID {
+                case Self.businessID: currentTier = max(currentTier, .business)
+                case Self.proID:      currentTier = max(currentTier, .pro)
+                default: break
+                }
                 await checkEntitlements()
                 await transaction.finish()
             case .userCancelled, .pending:
@@ -90,7 +96,7 @@ final class PurchaseManager {
     // MARK: - Feature Gates
 
     func canAddClient(existingCount: Int) -> Bool {
-        currentTier >= .pro || existingCount < 1
+        currentTier >= .pro || existingCount < 3
     }
 
     var canExportCSV: Bool      { currentTier >= .pro }

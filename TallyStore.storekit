@@ -86,7 +86,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "name.GeorgeClinkscales.Tally.business.monthly",
+          "productID" : "name.GeorgeClinkscales.Tally.businessmonthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Tally Business Monthly",
           "subscriptionGroupID" : "5D1C3F12",

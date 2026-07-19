@@ -35,6 +35,14 @@ struct ClientDetailView: View {
     private var totalAmount: Double {
         totalHours * hourlyRate
     }
+
+    private var allTimeHours: Double {
+        tallyStore.sessions.filter { $0.client == client }.reduce(0) { $0 + $1.hours }
+    }
+
+    private var budget: Double? {
+        tallyStore.budgetHours(for: client)
+    }
     
     var body: some View {
         List {
@@ -62,8 +70,26 @@ struct ClientDetailView: View {
                     }
                 }
                 .padding(.vertical, 4)
+
+                if let budget, budget > 0 {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ProgressBarView(value: allTimeHours, goal: budget)
+                        HStack {
+                            let remaining = budget - allTimeHours
+                            if remaining >= 0 {
+                                Text("\(TimeFormatter.shortFormat(remaining)) remaining of \(TimeFormatter.shortFormat(budget)) budget")
+                            } else {
+                                Text("\(TimeFormatter.shortFormat(-remaining)) over budget")
+                                    .foregroundStyle(.red)
+                            }
+                            Spacer()
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
-            
+
             // Range picker
             Section {
                 Picker("Period", selection: $selectedRange) {

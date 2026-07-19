@@ -78,7 +78,20 @@ struct PaywallView: View {
                                 "Team workspaces",
                                 "Shared client tracking"
                             ],
-                            isCurrent: purchases.currentTier == .business
+                            isCurrent: purchases.currentTier == .business,
+                            subscriptionFooter: AnyView(
+                                VStack(spacing: 6) {
+                                    Text("Tally Business is a 1-month auto-renewing subscription at \(purchases.businessProduct?.displayPrice ?? "$4.99")/month. Cancel anytime in App Store settings.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                    HStack(spacing: 16) {
+                                        Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
+                                        Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                                    }
+                                    .font(.caption)
+                                }
+                            )
                         ) {
                             Task {
                                 if purchases.businessProduct == nil {
@@ -103,22 +116,13 @@ struct PaywallView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    // Subscription details
-                    VStack(spacing: 4) {
-                        if let business = purchases.businessProduct {
-                            Text("Tally Business auto-renews at \(business.displayPrice)/month until cancelled.")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        HStack(spacing: 12) {
-                            Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
-                            Text("·").foregroundStyle(.secondary)
-                            Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdfma.html")!)
-                        }
-                        .font(.caption2)
+                    HStack(spacing: 12) {
+                        Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
+                        Text("·").foregroundStyle(.secondary)
+                        Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                     }
-                    .padding(.horizontal)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                     .padding(.bottom)
                 }
             }
@@ -164,6 +168,7 @@ private struct TierCard: View {
     let color: Color
     let features: [String]
     var isCurrent: Bool = false
+    var subscriptionFooter: AnyView? = nil
     var onPurchase: (() -> Void)? = nil
 
     var body: some View {
@@ -204,6 +209,11 @@ private struct TierCard: View {
                         .background(color, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .padding(.top, 4)
+            }
+
+            if let footer = subscriptionFooter {
+                footer
+                    .padding(.top, 4)
             }
         }
         .padding()
