@@ -22,6 +22,8 @@ struct ReportsView: View {
     @State private var showPaywall = false
     @State private var logAgainSession: SessionModel?
     @State private var showLogAgain = false
+    @State private var sessionToEdit: SessionModel?
+    @State private var showEditSession = false
     private let purchases = PurchaseManager.shared
     private let exportTip = ExportLockedTip()
     
@@ -54,6 +56,21 @@ struct ReportsView: View {
                 if isLoading {
                     ProgressView("Loading sessions...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if tallyStore.sessions.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "clock.badge.questionmark")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("No sessions yet")
+                            .font(.headline)
+                        Text("Start a timer on the Home tab, or tap ⋯ to log hours manually.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         Section("This Week") {
@@ -169,7 +186,7 @@ struct ReportsView: View {
                         
                         Section(purchases.hasFullHistory ? "Sessions" : "Sessions (last 7 days)") {
                             ForEach(tallyStore.visibleSessions) { session in
-                                HStack {
+                                HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(session.client)
                                             .font(.subheadline)
@@ -180,6 +197,16 @@ struct ReportsView: View {
                                         }
                                     }
                                     Spacer()
+                                    Button {
+                                        logAgainSession = session
+                                        showLogAgain = true
+                                    } label: {
+                                        Image(systemName: "arrow.clockwise")
+                                            .font(.caption)
+                                            .foregroundStyle(.blue)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Log again for \(session.client)")
                                     VStack(alignment: .trailing, spacing: 2) {
                                         Text(TimeFormatter.shortFormat(session.hours))
                                             .font(.subheadline)
@@ -191,12 +218,12 @@ struct ReportsView: View {
                                 .accessibilityElement(children: .combine)
                                 .swipeActions(edge: .leading) {
                                     Button {
-                                        logAgainSession = session
-                                        showLogAgain = true
+                                        sessionToEdit = session
+                                        showEditSession = true
                                     } label: {
-                                        Label("Log Again", systemImage: "arrow.clockwise")
+                                        Label("Edit", systemImage: "pencil")
                                     }
-                                    .tint(.blue)
+                                    .tint(.orange)
                                 }
                             }
                             .onDelete { indexSet in
@@ -251,6 +278,11 @@ struct ReportsView: View {
                         prefillClient: session.client,
                         prefillNote: session.taskNote ?? ""
                     )
+                }
+            }
+            .sheet(isPresented: $showEditSession) {
+                if let session = sessionToEdit {
+                    ManualEntryView(existingSession: session)
                 }
             }
             .sheet(isPresented: $showAllClients) {

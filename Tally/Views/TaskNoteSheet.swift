@@ -7,12 +7,16 @@ import SwiftUI
 
 struct TaskNoteSheet: View {
     let client: String
-    let hours: Double
+    @Binding var hours: Double
     @Binding var noteText: String
     let onSkip: () -> Void
     let onSave: () -> Void
 
     @FocusState private var isFocused: Bool
+
+    private var roundedTo15: Double {
+        (hours * 4).rounded() / 4
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,20 +28,30 @@ struct TaskNoteSheet: View {
                 .padding(.bottom, 20)
 
             // Session summary pill
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text(client)
-                    .fontWeight(.medium)
-                Text("·")
-                    .foregroundStyle(.secondary)
-                Text(TimeFormatter.shortFormat(hours))
-                    .foregroundStyle(.secondary)
+            VStack(spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text(client)
+                        .fontWeight(.medium)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text(TimeFormatter.shortFormat(hours))
+                        .foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(Color(.secondarySystemBackground)))
+
+                if abs(roundedTo15 - hours) > 0.001 {
+                    Button("Round to \(TimeFormatter.shortFormat(roundedTo15))") {
+                        hours = roundedTo15
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                }
             }
-            .font(.subheadline)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Capsule().fill(Color(.secondarySystemBackground)))
             .padding(.bottom, 20)
 
             // Title

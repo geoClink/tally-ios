@@ -93,26 +93,25 @@ class TallyStore {
         }
     }
     
-    func addSession(client: String, hours: Double, taskNote: String?) async {
+    func addSession(client: String, hours: Double, taskNote: String?, date: Date = Date(), isManual: Bool = false) async {
         guard let user = try? await supabase.auth.user() else {
             ErrorHandler.shared.handle("No user logged in")
             return
         }
         guard hours > 0.001 else { return }
-        let now = Date()
         let formatter = ISO8601DateFormatter()
-        let dateString = formatter.string(from: now).prefix(10).description
-        
+        let dateString = formatter.string(from: date).prefix(10).description
+
         do {
             let newSession = SessionInsert(
                 userId: user.id.uuidString,
                 client: client,
-                startTime: now,
-                endTime: now,
+                startTime: date,
+                endTime: date,
                 hours: hours,
                 date: dateString,
                 taskNote: taskNote,
-                isManual: false
+                isManual: isManual
             )
             try await supabase
                 .from("sessions")
@@ -122,6 +121,30 @@ class TallyStore {
             NotificationManager.shared.scheduleGoalWarning(current: weeklyHours, goal: weeklyGoal)
         } catch {
             ErrorHandler.shared.handle(error, context: "Saving session")
+        }
+    }
+
+    func updateSession(_ session: SessionModel, client: String, hours: Double, date: Date, taskNote: String?) async {
+        let dateString = ISO8601DateFormatter().string(from: date).prefix(10).description
+        do {
+            struct SessionUpdate: Encodable {
+                let client: String
+                let hours: Double
+                let date: String
+                let taskNote: String?
+                enum CodingKeys: String, CodingKey {
+                    case client, hours, date
+                    case taskNote = "task_note"
+                }
+            }
+            try await supabase
+                .from("sessions")
+                .update(SessionUpdate(client: client, hours: hours, date: dateString, taskNote: taskNote))
+                .eq("id", value: session.id.uuidString)
+                .execute()
+            await loadSessions()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Updating session")
         }
     }
     

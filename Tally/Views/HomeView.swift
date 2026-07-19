@@ -213,7 +213,7 @@ struct HomeView: View {
             .sheet(isPresented: $showTaskNote) {
                 TaskNoteSheet(
                     client: selectedClient,
-                    hours: pendingHours,
+                    hours: $pendingHours,
                     noteText: $taskNoteText,
                     onSkip: {
                         Task {

@@ -2,8 +2,6 @@
 //  ManualEntryView.swift
 //  Tally
 //
-//  Created by George Clinkscales on 5/28/26.
-//
 
 import SwiftUI
 
@@ -11,20 +9,39 @@ struct ManualEntryView: View {
     @Environment(TallyStore.self) var tallyStore
     @Environment(\.dismiss) private var dismiss
 
+    var existingSession: SessionModel? = nil
+
     @State private var client: String
-    @State private var hours: String = ""
-    @State private var selectedDate: Date = .now
+    @State private var selectedHours: Int
+    @State private var selectedMinutes: Int
+    @State private var selectedDate: Date
     @State private var taskNote: String
 
-    init(prefillClient: String = "", prefillNote: String = "") {
-        _client = State(initialValue: prefillClient)
-        _taskNote = State(initialValue: prefillNote)
+    private static let minuteOptions = Array(stride(from: 0, through: 55, by: 5))
+
+    init(prefillClient: String = "", prefillNote: String = "", existingSession: SessionModel? = nil) {
+        self.existingSession = existingSession
+        _client = State(initialValue: existingSession?.client ?? prefillClient)
+        _taskNote = State(initialValue: existingSession?.taskNote ?? prefillNote)
+        _selectedDate = State(initialValue: existingSession?.startTime ?? .now)
+        if let session = existingSession {
+            let totalMins = Int((session.hours * 60).rounded())
+            _selectedHours = State(initialValue: totalMins / 60)
+            _selectedMinutes = State(initialValue: (totalMins % 60) / 5 * 5)
+        } else {
+            _selectedHours = State(initialValue: 0)
+            _selectedMinutes = State(initialValue: 0)
+        }
     }
-    
+
+    private var computedHours: Double {
+        Double(selectedHours) + Double(selectedMinutes) / 60.0
+    }
+
     private var canSave: Bool {
-        !client.isEmpty && !hours.isEmpty && Double(hours) != nil
+        !client.isEmpty && computedHours > 0
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -32,7 +49,7 @@ struct ManualEntryView: View {
                     TextField("Client name", text: $client)
                         .accessibilityLabel("Client name")
                         .accessibilityHint("Enter the name of the client you worked for")
-                    
+
                     if !tallyStore.recentClients.isEmpty {
                         Picker("Recent clients", selection: $client) {
                             Text("Select a client").tag("")
@@ -43,29 +60,52 @@ struct ManualEntryView: View {
                         .accessibilityLabel("Select a recent client")
                     }
                 }
-                
-                Section("Hours") {
-                    TextField("e.g. 2.5", text: $hours)
-                        .accessibilityLabel("Hours worked")
-                        .accessibilityHint("Enter the number of hours")
-                        #if os(iOS)
-                        .keyboardType(.decimalPad)
-                        #endif
-                    
-                    if let hoursDouble = Double(hours), !hours.isEmpty {
-                        Text(TimeFormatter.accessibleFormat(hoursDouble))
+
+                Section("Duration") {
+                    #if os(iOS)
+                    HStack(spacing: 0) {
+                        Picker("Hours", selection: $selectedHours) {
+                            ForEach(0..<24, id: \.self) { h in
+                                Text("\(h) hr").tag(h)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(maxWidth: .infinity)
+
+                        Picker("Minutes", selection: $selectedMinutes) {
+                            ForEach(Self.minuteOptions, id: \.self) { m in
+                                Text("\(m) min").tag(m)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .frame(height: 120)
+                    #else
+                    HStack {
+                        Picker("Hours", selection: $selectedHours) {
+                            ForEach(0..<24, id: \.self) { h in Text("\(h)h").tag(h) }
+                        }
+                        Picker("Minutes", selection: $selectedMinutes) {
+                            ForEach(Self.minuteOptions, id: \.self) { m in Text("\(m)m").tag(m) }
+                        }
+                    }
+                    #endif
+
+                    if computedHours > 0 {
+                        Text(TimeFormatter.accessibleFormat(computedHours))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .accessibilityHidden(true)
                     }
                 }
-                
+
                 Section("Task Note (optional)") {
                     TextField("What did you work on?", text: $taskNote)
                         .accessibilityLabel("Task note")
                         .accessibilityHint("Describe what you worked on during this session")
                 }
-                
+
                 Section("Date") {
                     DatePicker(
                         "Date",
@@ -77,31 +117,41 @@ struct ManualEntryView: View {
                     .accessibilityHint("Select the date you performed this work")
                 }
             }
-            .navigationTitle("Log Hours")
+            .navigationTitle(existingSession != nil ? "Edit Session" : "Log Hours")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .accessibilityLabel("Cancel")
-                        .accessibilityHint("Dismisses without saving")
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { save() }
                         .disabled(!canSave)
-                        .accessibilityLabel("Save hours")
-                        .accessibilityHint(canSave ? "Saves \(hours) hours for \(client)" : "Fill in client name and hours first")
+                        .accessibilityLabel(existingSession != nil ? "Save changes" : "Save hours")
                 }
             }
         }
     }
-    
+
     private func save() {
-        guard let hoursDouble = Double(hours), !client.isEmpty else { return }
+        guard !client.isEmpty, computedHours > 0 else { return }
         Task {
-            await tallyStore.addSession(
-                client: client,
-                hours: hoursDouble,
-                taskNote: taskNote.isEmpty ? nil : taskNote
-            )
+            if let session = existingSession {
+                await tallyStore.updateSession(
+                    session,
+                    client: client,
+                    hours: computedHours,
+                    date: selectedDate,
+                    taskNote: taskNote.isEmpty ? nil : taskNote
+                )
+            } else {
+                await tallyStore.addSession(
+                    client: client,
+                    hours: computedHours,
+                    taskNote: taskNote.isEmpty ? nil : taskNote,
+                    date: selectedDate,
+                    isManual: true
+                )
+            }
             dismiss()
         }
     }
