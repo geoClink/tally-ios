@@ -20,6 +20,8 @@ struct ReportsView: View {
     @State private var showDeleteConfirmation = false
     @State private var showExportOptions = false
     @State private var showPaywall = false
+    @State private var logAgainSession: SessionModel?
+    @State private var showLogAgain = false
     private let purchases = PurchaseManager.shared
     private let exportTip = ExportLockedTip()
     
@@ -187,6 +189,15 @@ struct ReportsView: View {
                                     }
                                 }
                                 .accessibilityElement(children: .combine)
+                                .swipeActions(edge: .leading) {
+                                    Button {
+                                        logAgainSession = session
+                                        showLogAgain = true
+                                    } label: {
+                                        Label("Log Again", systemImage: "arrow.clockwise")
+                                    }
+                                    .tint(.blue)
+                                }
                             }
                             .onDelete { indexSet in
                                 if let index = indexSet.first {
@@ -234,6 +245,14 @@ struct ReportsView: View {
                 }
             }
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showLogAgain) {
+                if let session = logAgainSession {
+                    ManualEntryView(
+                        prefillClient: session.client,
+                        prefillNote: session.taskNote ?? ""
+                    )
+                }
+            }
             .sheet(isPresented: $showAllClients) {
                 AllClientsView(clients: allTimeByClient)
             }

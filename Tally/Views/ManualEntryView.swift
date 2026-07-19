@@ -10,11 +10,16 @@ import SwiftUI
 struct ManualEntryView: View {
     @Environment(TallyStore.self) var tallyStore
     @Environment(\.dismiss) private var dismiss
-    
-    @State private var client: String = ""
+
+    @State private var client: String
     @State private var hours: String = ""
     @State private var selectedDate: Date = .now
-    @State private var taskNote: String = ""
+    @State private var taskNote: String
+
+    init(prefillClient: String = "", prefillNote: String = "") {
+        _client = State(initialValue: prefillClient)
+        _taskNote = State(initialValue: prefillNote)
+    }
     
     private var canSave: Bool {
         !client.isEmpty && !hours.isEmpty && Double(hours) != nil
