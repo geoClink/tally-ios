@@ -18,13 +18,13 @@ class TallyStore {
     }
     var clientRates: [ClientRate] = []
     var clientGoals: [ClientGoal] = []
-    var weeklyGoal: Double = 5.0
+    var weeklyGoal: Double = 40.0
     var isLoading = false
     var currentUserId: String?
     var currentUserEmail: String?
     
     var weeklyHours: Double {
-        let calendar = Calendar.current
+        let calendar = Calendar(identifier: .iso8601)
         let now = Date()
         let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         return sessions
@@ -45,10 +45,12 @@ class TallyStore {
     }
     
     func loadSessions() async {
+        guard let user = try? await supabase.auth.user() else { return }
         do {
             let response: [SessionModel] = try await supabase
                 .from("sessions")
                 .select()
+                .eq("user_id", value: user.id.uuidString)
                 .order("created_at", ascending: false)
                 .execute()
                 .value
@@ -260,7 +262,26 @@ class TallyStore {
 
     var workspaces: [WorkspaceModel] = []
     var workspaceMembers: [WorkspaceMember] = []
-    var teamSessions: [String: [SessionModel]] = [:]
+    var teamHoursWeekly:  [String: Double] = [:]
+    var teamHoursAllTime: [String: Double] = [:]
+    private var teamWeeklyTotal:  Double = 0
+    private var teamAllTimeTotal: Double = 0
+
+    private struct TeamHoursRow: Decodable {
+        let memberEmail: String
+        let memberUserId: String
+        let totalHours: Double
+        enum CodingKeys: String, CodingKey {
+            case memberEmail   = "member_email"
+            case memberUserId  = "member_user_id"
+            case totalHours    = "total_hours"
+        }
+    }
+
+    private struct TeamHoursParams: Encodable {
+        let p_workspace_id: UUID
+        let p_start_date: String?
+    }
 
     func loadWorkspaces() async {
         guard let user = try? await supabase.auth.user() else { return }
@@ -371,54 +392,58 @@ class TallyStore {
     }
 
     func loadTeamSessions(for workspace: WorkspaceModel) async {
-        let memberIds = workspaceMembers
-            .filter { $0.workspaceId == workspace.id && !$0.isPending }
-            .compactMap { $0.userId }
-        guard !memberIds.isEmpty else { return }
+        let isoCalendar = Calendar(identifier: .iso8601)
+        let monday = isoCalendar.date(
+            from: isoCalendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        ) ?? Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
 
         do {
-            let fetched: [SessionModel] = try await supabase
-                .from("sessions")
-                .select()
-                .in("user_id", values: memberIds)
-                .eq("client", value: workspace.clientName)
+            async let weeklyFetch: [TeamHoursRow] = supabase
+                .rpc("get_team_hours", params: TeamHoursParams(
+                    p_workspace_id: workspace.id,
+                    p_start_date: formatter.string(from: monday)
+                ))
                 .execute()
                 .value
-            var grouped: [String: [SessionModel]] = [:]
-            for session in fetched {
-                grouped[session.userId, default: []].append(session)
-            }
-            teamSessions = grouped
+
+            async let allTimeFetch: [TeamHoursRow] = supabase
+                .rpc("get_team_hours", params: TeamHoursParams(
+                    p_workspace_id: workspace.id,
+                    p_start_date: nil
+                ))
+                .execute()
+                .value
+
+            let (weekly, allTime) = try await (weeklyFetch, allTimeFetch)
+            var weeklyMap:  [String: Double] = [:]
+            var allTimeMap: [String: Double] = [:]
+            for row in weekly  { weeklyMap[row.memberUserId]  = row.totalHours; weeklyMap[row.memberEmail]  = row.totalHours }
+            for row in allTime { allTimeMap[row.memberUserId] = row.totalHours; allTimeMap[row.memberEmail] = row.totalHours }
+            teamHoursWeekly  = weeklyMap
+            teamHoursAllTime = allTimeMap
+            teamWeeklyTotal  = weekly.reduce(0)  { $0 + $1.totalHours }
+            teamAllTimeTotal = allTime.reduce(0) { $0 + $1.totalHours }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading team sessions")
         }
     }
 
     func teamWeeklyHours(for userId: String) -> Double {
-        let monday = Calendar.current.date(
-            from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
-        ) ?? Date()
-        return (teamSessions[userId] ?? [])
-            .filter { $0.startTime >= monday }
-            .reduce(0) { $0 + $1.hours }
+        teamHoursWeekly[userId] ?? 0
     }
 
     func teamAllTimeHours(for userId: String) -> Double {
-        (teamSessions[userId] ?? []).reduce(0) { $0 + $1.hours }
+        teamHoursAllTime[userId] ?? 0
     }
 
     func teamTotalWeeklyHours(for workspace: WorkspaceModel) -> Double {
-        workspaceMembers
-            .filter { $0.workspaceId == workspace.id && !$0.isPending }
-            .compactMap { $0.userId }
-            .reduce(0) { $0 + teamWeeklyHours(for: $1) }
+        teamWeeklyTotal
     }
 
     func teamTotalAllTimeHours(for workspace: WorkspaceModel) -> Double {
-        workspaceMembers
-            .filter { $0.workspaceId == workspace.id && !$0.isPending }
-            .compactMap { $0.userId }
-            .reduce(0) { $0 + teamAllTimeHours(for: $1) }
+        teamAllTimeTotal
     }
 
     func leaveWorkspace(_ workspace: WorkspaceModel) async {

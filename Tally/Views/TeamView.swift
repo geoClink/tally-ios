@@ -240,8 +240,8 @@ struct WorkspaceDetailView: View {
                         canChangeRole: isOwner,
                         canRemove: canRemove,
                         isCurrentUser: member.invitedEmail.lowercased() == tallyStore.currentUserEmail?.lowercased(),
-                        weeklyHours: member.userId.map { tallyStore.teamWeeklyHours(for: $0) },
-                        allTimeHours: member.userId.map { tallyStore.teamAllTimeHours(for: $0) },
+                        weeklyHours: tallyStore.teamWeeklyHours(for: member.userId ?? member.invitedEmail),
+                        allTimeHours: tallyStore.teamAllTimeHours(for: member.userId ?? member.invitedEmail),
                         onChangeRole: { newRole in
                             Task { await tallyStore.changeMemberRole(member, to: newRole) }
                         },
