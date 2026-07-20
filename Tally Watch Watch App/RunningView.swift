@@ -11,6 +11,8 @@ struct RunningView: View {
     @Binding var isRunning: Bool
     @Binding var isPaused: Bool
     @Binding var timer: Timer?
+    @Binding var timerStartDate: Date
+    @Binding var accumulatedSeconds: Double
     let onStop: (Double) -> Void
 
     private var timeDisplay: String {
@@ -43,15 +45,23 @@ struct RunningView: View {
 
             HStack(spacing: 16) {
                 Button {
+                    let defaults = UserDefaults.standard
                     if isPaused {
                         isPaused = false
+                        timerStartDate = Date()
+                        defaults.set(false, forKey: "timerPaused")
+                        defaults.set(timerStartDate.timeIntervalSince1970, forKey: "timerStartDate")
+                        defaults.set(accumulatedSeconds, forKey: "timerAccumulated")
                         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                            elapsedSeconds += 1
+                            elapsedSeconds = accumulatedSeconds + Date().timeIntervalSince(timerStartDate)
                         }
                     } else {
                         isPaused = true
+                        accumulatedSeconds = elapsedSeconds
                         timer?.invalidate()
                         timer = nil
+                        defaults.set(true, forKey: "timerPaused")
+                        defaults.set(accumulatedSeconds, forKey: "timerAccumulated")
                     }
                 } label: {
                     Image(systemName: isPaused ? "play.fill" : "pause.fill")
@@ -70,6 +80,7 @@ struct RunningView: View {
                     isRunning = false
                     isPaused = false
                     elapsedSeconds = 0
+                    UserDefaults.standard.set(false, forKey: "timerRunning")
                     onStop(hours)
                 } label: {
                     Image(systemName: "stop.fill")

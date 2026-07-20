@@ -13,6 +13,8 @@ struct ClientScrollView: View {
     @Binding var isRunning: Bool
     @Binding var timer: Timer?
     @Binding var elapsedSeconds: Double
+    @Binding var timerStartDate: Date
+    @Binding var accumulatedSeconds: Double
     
     @State private var scrollIndex = 0
     
@@ -32,10 +34,18 @@ struct ClientScrollView: View {
                         
                         Button {
                             selectedClient = clients[index]
+                            accumulatedSeconds = 0
                             elapsedSeconds = 0
+                            timerStartDate = Date()
                             isRunning = true
+                            let defaults = UserDefaults.standard
+                            defaults.set(true, forKey: "timerRunning")
+                            defaults.set(false, forKey: "timerPaused")
+                            defaults.set(clients[index], forKey: "timerClient")
+                            defaults.set(0.0, forKey: "timerAccumulated")
+                            defaults.set(timerStartDate.timeIntervalSince1970, forKey: "timerStartDate")
                             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                                elapsedSeconds += 1
+                                elapsedSeconds = accumulatedSeconds + Date().timeIntervalSince(timerStartDate)
                             }
                         } label: {
                             Image(systemName: "play.fill")
