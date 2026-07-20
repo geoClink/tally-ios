@@ -475,10 +475,20 @@ class TallyStore {
     }
 
     func updateWorkspace(_ workspace: WorkspaceModel, name: String, clientName: String, weeklyGoal: Double = 0) async {
+        struct WorkspaceUpdate: Encodable {
+            let name: String
+            let clientName: String
+            let weeklyGoal: Double
+            enum CodingKeys: String, CodingKey {
+                case name
+                case clientName = "client_name"
+                case weeklyGoal = "weekly_goal"
+            }
+        }
         do {
             try await supabase
                 .from("workspaces")
-                .update(["name": name, "client_name": clientName, "weekly_goal": weeklyGoal])
+                .update(WorkspaceUpdate(name: name, clientName: clientName, weeklyGoal: weeklyGoal))
                 .eq("id", value: workspace.id.uuidString)
                 .execute()
             await loadWorkspaces()
