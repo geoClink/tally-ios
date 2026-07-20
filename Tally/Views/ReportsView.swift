@@ -32,7 +32,7 @@ struct ReportsView: View {
     }
     
     private var weeklyByClient: [(String, Double)] {
-        let calendar = Calendar.current
+        let calendar = Calendar(identifier: .iso8601)
         let now = Date()
         let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         var dict: [String: Double] = [:]
