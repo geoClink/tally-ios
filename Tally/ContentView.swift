@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var isAuthenticated = false
     @State private var isLoading = true
     @State private var errorHandler = ErrorHandler.shared
-    @State private var selectedTab: Tab = .timer
+    @State private var selectedTab: Tab? = .timer
 
     var body: some View {
         Group {
@@ -40,11 +40,11 @@ struct ContentView: View {
                     .navigationTitle("Tally")
                 } detail: {
                     switch selectedTab {
-                    case .timer:    HomeView()
                     case .reports:  ReportsView()
                     case .activity: CalendarView()
                     case .team:     TeamView()
                     case .account:  AccountView()
+                    default:        HomeView()
                     }
                 }
             } else {
