@@ -8,12 +8,18 @@
 import SwiftUI
 import Supabase
 
+private enum Tab: Hashable {
+    case timer, reports, activity, team, account
+}
+
 struct ContentView: View {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isAuthenticated = false
     @State private var isLoading = true
     @State private var errorHandler = ErrorHandler.shared
-    
+    @State private var selectedTab: Tab = .timer
+
     var body: some View {
         Group {
             if isLoading {
@@ -22,6 +28,25 @@ struct ContentView: View {
                 OnboardingView()
             } else if !isAuthenticated {
                 AuthView()
+            } else if horizontalSizeClass == .regular {
+                NavigationSplitView {
+                    List(selection: $selectedTab) {
+                        Label("Timer", systemImage: "timer").tag(Tab.timer)
+                        Label("Reports", systemImage: "chart.bar.fill").tag(Tab.reports)
+                        Label("Activity", systemImage: "calendar").tag(Tab.activity)
+                        Label("Team", systemImage: "person.3.fill").tag(Tab.team)
+                        Label("Account", systemImage: "person.circle").tag(Tab.account)
+                    }
+                    .navigationTitle("Tally")
+                } detail: {
+                    switch selectedTab {
+                    case .timer:    HomeView()
+                    case .reports:  ReportsView()
+                    case .activity: CalendarView()
+                    case .team:     TeamView()
+                    case .account:  AccountView()
+                    }
+                }
             } else {
                 TabView {
                     HomeView()
