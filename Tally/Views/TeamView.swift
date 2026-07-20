@@ -10,6 +10,7 @@ struct TeamView: View {
     @State private var showCreateWorkspace = false
     @State private var newWorkspaceName = ""
     @State private var newWorkspaceClient = ""
+    @State private var newWorkspaceGoal: Double = 0
     @State private var showPaywall = false
     private let purchases = PurchaseManager.shared
 
@@ -36,11 +37,12 @@ struct TeamView: View {
             }
             .task { await tallyStore.loadWorkspaces() }
             .sheet(isPresented: $showCreateWorkspace) {
-                CreateWorkspaceSheet(name: $newWorkspaceName, clientName: $newWorkspaceClient) {
+                CreateWorkspaceSheet(name: $newWorkspaceName, clientName: $newWorkspaceClient, weeklyGoal: $newWorkspaceGoal) {
                     Task {
-                        await tallyStore.createWorkspace(name: newWorkspaceName, clientName: newWorkspaceClient)
+                        await tallyStore.createWorkspace(name: newWorkspaceName, clientName: newWorkspaceClient, weeklyGoal: newWorkspaceGoal)
                         newWorkspaceName = ""
                         newWorkspaceClient = ""
+                        newWorkspaceGoal = 0
                         showCreateWorkspace = false
                     }
                 }
@@ -144,9 +146,27 @@ private struct WorkspaceCard: View {
                 Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
                     .font(.caption.bold())
                     .foregroundStyle(.blue)
-                Text("this week")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if workspace.weeklyGoal > 0 {
+                    Text("of \(TimeFormatter.shortFormat(workspace.weeklyGoal))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("this week")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if workspace.weeklyGoal > 0 {
+                let progress = min(tallyStore.teamTotalWeeklyHours(for: workspace) / workspace.weeklyGoal, 1.0)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2).fill(Color.secondary.opacity(0.2)).frame(height: 4)
+                        RoundedRectangle(cornerRadius: 2).fill(progress >= 1 ? Color.green : Color.blue)
+                            .frame(width: geo.size.width * progress, height: 4)
+                    }
+                }
+                .frame(height: 4)
+                .padding(.top, 2)
             }
         }
         .padding(.vertical, 4)
@@ -215,9 +235,43 @@ struct WorkspaceDetailView: View {
                     Text("Team Total")
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
-                        .font(.headline)
-                        .foregroundStyle(.blue)
+                    if workspace.weeklyGoal > 0 {
+                        Text("\(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace))) of \(TimeFormatter.shortFormat(workspace.weeklyGoal))")
+                            .font(.headline)
+                            .foregroundStyle(.blue)
+                    } else {
+                        Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
+                            .font(.headline)
+                            .foregroundStyle(.blue)
+                    }
+                }
+                if workspace.weeklyGoal > 0 {
+                    let progress = min(tallyStore.teamTotalWeeklyHours(for: workspace) / workspace.weeklyGoal, 1.0)
+                    VStack(spacing: 4) {
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.2)).frame(height: 6)
+                                RoundedRectangle(cornerRadius: 3).fill(progress >= 1 ? Color.green : Color.blue)
+                                    .frame(width: geo.size.width * progress, height: 6)
+                            }
+                        }
+                        .frame(height: 6)
+                        HStack {
+                            Text("\(Int(progress * 100))% of weekly goal")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            if progress < 1 {
+                                Text("\(TimeFormatter.shortFormat(workspace.weeklyGoal - tallyStore.teamTotalWeeklyHours(for: workspace))) remaining")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Goal reached!")
+                                    .font(.caption)
+                                    .foregroundStyle(.green)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -297,9 +351,9 @@ struct WorkspaceDetailView: View {
             }
         }
         .sheet(isPresented: $showEdit) {
-            EditWorkspaceSheet(workspace: workspace) { newName, newClient in
+            EditWorkspaceSheet(workspace: workspace) { newName, newClient, newGoal in
                 Task {
-                    await tallyStore.updateWorkspace(workspace, name: newName, clientName: newClient)
+                    await tallyStore.updateWorkspace(workspace, name: newName, clientName: newClient, weeklyGoal: newGoal)
                     showEdit = false
                 }
             }
@@ -401,8 +455,10 @@ private struct MemberRow: View {
 private struct CreateWorkspaceSheet: View {
     @Binding var name: String
     @Binding var clientName: String
+    @Binding var weeklyGoal: Double
     let onCreate: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var goalText = ""
 
     private var canCreate: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
@@ -426,6 +482,16 @@ private struct CreateWorkspaceSheet: View {
                     Text("Client Name")
                 } footer: {
                     Text("The client this workspace tracks time for. Team members log time using this exact client name.")
+                }
+
+                Section {
+                    TextField("e.g. 80", text: $goalText)
+                        .keyboardType(.decimalPad)
+                        .onChange(of: goalText) { _, val in weeklyGoal = Double(val) ?? 0 }
+                } header: {
+                    Text("Weekly Hour Goal (optional)")
+                } footer: {
+                    Text("Total hours your team aims to log per week for this client.")
                 }
             }
             .navigationTitle("New Workspace")
@@ -482,17 +548,19 @@ private struct InviteMemberSheet: View {
 
 private struct EditWorkspaceSheet: View {
     let workspace: WorkspaceModel
-    let onSave: (String, String) -> Void
+    let onSave: (String, String, Double) -> Void
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
     @State private var clientName: String
+    @State private var goalText: String
 
-    init(workspace: WorkspaceModel, onSave: @escaping (String, String) -> Void) {
+    init(workspace: WorkspaceModel, onSave: @escaping (String, String, Double) -> Void) {
         self.workspace = workspace
         self.onSave = onSave
         _name = State(initialValue: workspace.name)
         _clientName = State(initialValue: workspace.clientName)
+        _goalText = State(initialValue: workspace.weeklyGoal > 0 ? String(Int(workspace.weeklyGoal)) : "")
     }
 
     private var canSave: Bool {
@@ -516,12 +584,21 @@ private struct EditWorkspaceSheet: View {
                 } footer: {
                     Text("Team members log time using this exact client name.")
                 }
+
+                Section {
+                    TextField("e.g. 80", text: $goalText)
+                        .keyboardType(.decimalPad)
+                } header: {
+                    Text("Weekly Hour Goal (optional)")
+                } footer: {
+                    Text("Total hours your team aims to log per week for this client.")
+                }
             }
             .navigationTitle("Edit Workspace")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { onSave(name, clientName) }
+                    Button("Save") { onSave(name, clientName, Double(goalText) ?? 0) }
                         .disabled(!canSave)
                 }
             }

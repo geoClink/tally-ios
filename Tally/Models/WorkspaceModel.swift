@@ -11,6 +11,7 @@ struct WorkspaceModel: Identifiable, Codable, Hashable {
     let clientName: String
     let ownerId: String
     let createdAt: Date
+    let weeklyGoal: Double
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -18,6 +19,7 @@ struct WorkspaceModel: Identifiable, Codable, Hashable {
         case clientName = "client_name"
         case ownerId    = "owner_id"
         case createdAt  = "created_at"
+        case weeklyGoal = "weekly_goal"
     }
 }
 
@@ -57,10 +59,12 @@ struct WorkspaceInsert: Codable {
     let name: String
     let clientName: String
     let ownerId: String
+    let weeklyGoal: Double
 
     enum CodingKeys: String, CodingKey {
         case name
         case clientName = "client_name"
         case ownerId    = "owner_id"
+        case weeklyGoal = "weekly_goal"
     }
 }

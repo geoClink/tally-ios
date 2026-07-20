@@ -317,10 +317,10 @@ class TallyStore {
         }
     }
 
-    func createWorkspace(name: String, clientName: String) async {
+    func createWorkspace(name: String, clientName: String, weeklyGoal: Double = 0) async {
         guard let user = try? await supabase.auth.user() else { return }
         do {
-            let insert = WorkspaceInsert(name: name, clientName: clientName, ownerId: user.id.uuidString)
+            let insert = WorkspaceInsert(name: name, clientName: clientName, ownerId: user.id.uuidString, weeklyGoal: weeklyGoal)
             try await supabase
                 .from("workspaces")
                 .insert(insert)
@@ -474,11 +474,11 @@ class TallyStore {
         } != nil
     }
 
-    func updateWorkspace(_ workspace: WorkspaceModel, name: String, clientName: String) async {
+    func updateWorkspace(_ workspace: WorkspaceModel, name: String, clientName: String, weeklyGoal: Double = 0) async {
         do {
             try await supabase
                 .from("workspaces")
-                .update(["name": name, "client_name": clientName])
+                .update(["name": name, "client_name": clientName, "weekly_goal": weeklyGoal])
                 .eq("id", value: workspace.id.uuidString)
                 .execute()
             await loadWorkspaces()
