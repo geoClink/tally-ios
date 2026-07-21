@@ -8,10 +8,12 @@
 import SwiftUI
 import Supabase
 import AppIntents
+import StoreKit
 
 struct HomeView: View {
     @Environment(TallyStore.self) var tallyStore
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.requestReview) private var requestReview
     
     @State private var viewModel = TimerViewModel()
     @State private var showClientPicker = false
@@ -220,6 +222,7 @@ struct HomeView: View {
                             await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: nil)
                             taskNoteText = ""
                             showTaskNote = false
+                            maybeRequestReview()
                         }
                     },
                     onSave: {
@@ -227,6 +230,7 @@ struct HomeView: View {
                             await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: taskNoteText.isEmpty ? nil : taskNoteText)
                             taskNoteText = ""
                             showTaskNote = false
+                            maybeRequestReview()
                         }
                     }
                 )
@@ -251,5 +255,15 @@ struct HomeView: View {
         guard let filter = try? await TallyFocusFilterIntent.current,
               let client = filter.client, !client.isEmpty else { return }
         selectedClient = client
+    }
+
+    private func maybeRequestReview() {
+        let key = "completedSessionCount"
+        let count = UserDefaults.standard.integer(forKey: key) + 1
+        UserDefaults.standard.set(count, forKey: key)
+        // Prompt at 3 sessions, then every 15 after that
+        if count == 3 || (count > 3 && (count - 3) % 15 == 0) {
+            requestReview()
+        }
     }
 }
