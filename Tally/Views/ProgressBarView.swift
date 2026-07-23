@@ -10,6 +10,14 @@ import SwiftUI
 struct ProgressBarView: View {
     var value: Double
     var goal: Double
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    // .secondary (#8A8A8E) is only 3.44:1 against white — fails 4.5:1 for 12pt caption text.
+    // #666666 (white: 0.40) gives 5.74:1 in light mode; dark mode uses system secondary.
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
     
     private var progress: Double {
         min(value / goal, 1.0)
@@ -48,11 +56,11 @@ struct ProgressBarView: View {
             HStack {
                 Text(TimeFormatter.shortFormat(value))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(captionColor)
                 Spacer()
                 Text("\(Int(progress * 100))% of \(TimeFormatter.shortFormat(goal)) goal")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(captionColor)
             }
         }
         .accessibilityElement(children: .ignore)

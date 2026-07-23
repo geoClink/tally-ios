@@ -26,8 +26,11 @@ struct ExportOptionsView: View {
                                 Spacer()
                                 Image(systemName: "arrow.down.doc")
                                     .foregroundStyle(.blue)
+                                    .accessibilityHidden(true)
                             }
                         }
+                        .accessibilityLabel("Export \(range.rawValue)")
+                        .accessibilityHint("Downloads a CSV file")
                     }
                 }
 
@@ -46,8 +49,11 @@ struct ExportOptionsView: View {
                                     Spacer()
                                     Image(systemName: "arrow.down.doc")
                                         .foregroundStyle(.blue)
+                                        .accessibilityHidden(true)
                                 }
                             }
+                            .accessibilityLabel("Export all time for \(client)")
+                            .accessibilityHint("Downloads a CSV file")
                         }
                     }
                 }

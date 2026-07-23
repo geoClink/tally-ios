@@ -70,6 +70,11 @@ struct ClientDetailView: View {
                     }
                 }
                 .padding(.vertical, 4)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(hourlyRate > 0
+                    ? "\(TimeFormatter.accessibleFormat(totalHours)) total, \(totalAmount.formatted(.currency(code: "USD"))) earned"
+                    : "\(TimeFormatter.accessibleFormat(totalHours)) total"
+                )
 
                 if let budget, budget > 0 {
                     VStack(alignment: .leading, spacing: 4) {
@@ -113,9 +118,12 @@ struct ClientDetailView: View {
                         Image(systemName: "chevron.right")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .foregroundStyle(.primary)
+                .accessibilityLabel("Hourly rate: \(hourlyRate > 0 ? hourlyRate.formatted(.currency(code: "USD")) : "not set")")
+                .accessibilityHint("Opens rate settings for \(client)")
                 
                 Button {
                     if purchases.canInvoice {
@@ -132,10 +140,12 @@ struct ClientDetailView: View {
                             Image(systemName: "lock.fill")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
                         }
                     }
                 }
                 .disabled(filteredSessions.isEmpty && purchases.canInvoice)
+                .accessibilityHint(purchases.canInvoice ? "Generates a PDF invoice for \(client)" : "Requires Business plan")
                 .popoverTip(invoiceTip)
                 .onChange(of: purchases.canInvoice) { _, can in
                     if can { invoiceTip.invalidate(reason: .actionPerformed) }
@@ -149,6 +159,16 @@ struct ClientDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(filteredSessions) { session in
+                        let sessionLabel: String = {
+                            var parts: [String] = []
+                            if let date = session.date { parts.append(date) }
+                            if let note = session.taskNote, !note.isEmpty { parts.append(note) }
+                            parts.append(TimeFormatter.accessibleFormat(session.hours))
+                            if hourlyRate > 0 {
+                                parts.append((session.hours * hourlyRate).formatted(.currency(code: "USD")))
+                            }
+                            return parts.joined(separator: ", ")
+                        }()
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(session.date ?? "")
@@ -170,6 +190,8 @@ struct ClientDetailView: View {
                                 }
                             }
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(sessionLabel)
                     }
                 }
             }

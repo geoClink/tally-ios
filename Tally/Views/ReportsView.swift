@@ -30,6 +30,12 @@ struct ReportsView: View {
     private var topClientsForChart: [(String, Double)] {
         Array(allTimeByClient.prefix(20))
     }
+
+    private var chartAccessibilityDescription: String {
+        topClientsForChart
+            .map { "\($0.0): \(TimeFormatter.accessibleFormat($0.1))" }
+            .joined(separator: "; ")
+    }
     
     private var weeklyByClient: [(String, Double)] {
         let calendar = Calendar(identifier: .iso8601)
@@ -66,6 +72,7 @@ struct ReportsView: View {
                             .font(.headline)
                         Text("Start a timer on the Home tab, or tap ⋯ to log hours manually.")
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
@@ -96,7 +103,10 @@ struct ReportsView: View {
                                         .foregroundStyle(.secondary)
                                     }
                                     .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel("\(client): \(TimeFormatter.accessibleFormat(hours)) this week")
+                                    .accessibilityLabel(rate > 0
+                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) this week, \((hours * rate).formatted(.currency(code: "USD")))"
+                                        : "\(client): \(TimeFormatter.accessibleFormat(hours)) this week"
+                                    )
                                 }
                             }
                         }
@@ -143,7 +153,8 @@ struct ReportsView: View {
                                     }
                                 }
                                 .frame(height: 216)
-                                .accessibilityLabel("Bar chart showing hours by client")
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("All-time hours by client. \(chartAccessibilityDescription)")
                             }
                             
                             if allTimeByClient.isEmpty {
@@ -169,7 +180,10 @@ struct ReportsView: View {
                                         }
                                     }
                                     .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel("\(client): \(TimeFormatter.accessibleFormat(hours)) total. Tap for details.")
+                                    .accessibilityLabel(rate > 0
+                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) total, \((hours * rate).formatted(.currency(code: "USD"))). Double tap for details."
+                                        : "\(client): \(TimeFormatter.accessibleFormat(hours)) total. Double tap for details."
+                                    )
                                 }
                                 
                                 if allTimeByClient.count > 20 {
@@ -180,6 +194,7 @@ struct ReportsView: View {
                                             .font(.subheadline)
                                             .foregroundStyle(.blue)
                                     }
+                                    .accessibilityLabel("See all \(allTimeByClient.count) clients")
                                 }
                             }
                         }
@@ -196,6 +211,7 @@ struct ReportsView: View {
                                                 .foregroundStyle(.secondary)
                                         }
                                     }
+                                    .accessibilityElement(children: .combine)
                                     Spacer()
                                     Button {
                                         logAgainSession = session
@@ -214,8 +230,8 @@ struct ReportsView: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
+                                    .accessibilityElement(children: .combine)
                                 }
-                                .accessibilityElement(children: .combine)
                                 .swipeActions(edge: .leading) {
                                     Button {
                                         sessionToEdit = session

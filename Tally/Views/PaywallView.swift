@@ -20,10 +20,12 @@ struct PaywallView: View {
                         Image(systemName: "timer")
                             .font(.system(size: 48))
                             .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                         Text("Upgrade Tally")
                             .font(.title.bold())
                         Text("Unlock your full potential")
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 8)
@@ -113,6 +115,7 @@ struct PaywallView: View {
                     } label: {
                         Text("Restore Purchases")
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
 
@@ -176,7 +179,7 @@ private struct TierCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name).font(.headline)
-                    Text(price).font(.subheadline).foregroundStyle(.secondary)
+                    Text(price).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if isCurrent {
@@ -186,8 +189,11 @@ private struct TierCard: View {
                         .padding(.vertical, 4)
                         .background(color.opacity(0.15), in: Capsule())
                         .foregroundStyle(color)
+                        .accessibilityHidden(true)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isCurrent ? "\(name), \(price). Current plan." : "\(name), \(price)")
 
             Divider()
 
@@ -195,6 +201,7 @@ private struct TierCard: View {
                 Label(feature, systemImage: "checkmark")
                     .font(.subheadline)
                     .foregroundStyle(.primary)
+                    .accessibilityLabel(feature)
             }
 
             if let onPurchase, !isCurrent {
@@ -208,6 +215,7 @@ private struct TierCard: View {
                         .padding(.vertical, 12)
                         .background(color, in: RoundedRectangle(cornerRadius: 10))
                 }
+                .accessibilityHint("Purchases \(name) plan")
                 .padding(.top, 4)
             }
 

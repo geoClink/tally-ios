@@ -27,6 +27,7 @@ struct AllClientsView: View {
                         Text(client)
                         Spacer()
                         Text(TimeFormatter.shortFormat(hours))
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
                     .accessibilityElement(children: .ignore)

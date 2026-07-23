@@ -44,6 +44,7 @@ struct AuthView: View {
 
             Text(isSignUp ? "Create your account" : "Sign in to continue")
                 .font(.subheadline)
+                .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 12) {

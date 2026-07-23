@@ -15,7 +15,18 @@ struct HomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
     
+    @Environment(\.colorScheme) private var colorScheme
     @State private var viewModel = TimerViewModel()
+
+    // System orange fails WCAG AA (2.31:1 vs white). Dark amber passes at 5.3:1.
+    private var accessibleOrange: Color {
+        colorScheme == .dark ? .orange : Color(red: 0.65, green: 0.30, blue: 0.0)
+    }
+
+    // System red (~3.4:1 vs white) may fail depending on Inspector threshold. Dark red passes at 6.2:1.
+    private var accessibleRed: Color {
+        colorScheme == .dark ? .red : Color(red: 0.75, green: 0.0, blue: 0.04)
+    }
     @State private var showClientPicker = false
     @State private var showManualEntry = false
     @State private var showGoalSetting = false
@@ -86,6 +97,7 @@ struct HomeView: View {
                     if viewModel.isRunning {
                         Text(viewModel.activeClient)
                             .font(.subheadline)
+                            .fontWeight(.bold)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Current client: \(viewModel.activeClient)")
                         
@@ -96,7 +108,7 @@ struct HomeView: View {
                         
                         Text(viewModel.isPaused ? "Paused" : "Running")
                             .font(.caption)
-                            .foregroundStyle(viewModel.isPaused ? .orange : .green)
+                            .foregroundStyle(viewModel.isPaused ? accessibleOrange : .green)
                             .accessibilityLabel("Timer status: \(viewModel.isPaused ? "Paused" : "Running")")
                     } else {
                         Text("00:00:00")
@@ -144,7 +156,7 @@ struct HomeView: View {
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(accessibleOrange))
                         }
                         .accessibilityLabel(viewModel.isPaused ? "Resume timer" : "Pause timer")
                         .accessibilityHint(viewModel.isPaused ? "Resumes tracking time for \(viewModel.activeClient)" : "Pauses tracking time for \(viewModel.activeClient)")
@@ -161,7 +173,7 @@ struct HomeView: View {
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(RoundedRectangle(cornerRadius: 12).fill(Color.red))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(accessibleRed))
                         }
                         .accessibilityLabel("Stop timer")
                         .accessibilityHint("Stops and saves the current session for \(viewModel.activeClient)")

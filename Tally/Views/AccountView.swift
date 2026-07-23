@@ -21,14 +21,19 @@ struct AccountView: View {
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 48))
                             .foregroundStyle(.blue)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(userEmail.isEmpty ? "Loading..." : userEmail)
                                 .font(.subheadline)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(userEmail.isEmpty ? .secondary : .primary)
                             tierBadge
+                                .accessibilityHidden(true)
                         }
                     }
                     .padding(.vertical, 4)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(userEmail.isEmpty ? "Account loading" : "\(userEmail), \(tierLabel) plan")
                 }
 
                 Section("Subscription") {

@@ -32,6 +32,7 @@ struct TeamView: View {
                         Button { showCreateWorkspace = true } label: {
                             Image(systemName: "plus")
                         }
+                        .accessibilityLabel("Create workspace")
                     }
                 }
             }
@@ -74,6 +75,7 @@ struct TeamView: View {
             Image(systemName: "person.3.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(.purple)
+                .accessibilityHidden(true)
             VStack(spacing: 8) {
                 Text("Team Workspaces")
                     .font(.title2.bold())
@@ -92,6 +94,7 @@ struct TeamView: View {
                     .background(RoundedRectangle(cornerRadius: 14).fill(Color.purple))
                     .padding(.horizontal, 32)
             }
+            .accessibilityHint("Opens upgrade options to unlock team workspaces")
             Spacer()
         }
     }
@@ -102,10 +105,12 @@ struct TeamView: View {
             Image(systemName: "person.3")
                 .font(.system(size: 56))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("No workspaces yet")
                 .font(.headline)
             Text("Create a workspace to start collaborating with your team.")
                 .font(.subheadline)
+                .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -167,6 +172,8 @@ private struct WorkspaceCard: View {
                 }
                 .frame(height: 4)
                 .padding(.top, 2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(Int(progress * 100)) percent of weekly goal")
             }
         }
         .padding(.vertical, 4)
@@ -224,8 +231,10 @@ struct WorkspaceDetailView: View {
                 HStack {
                     Image(systemName: "person.2.fill")
                         .foregroundStyle(.blue)
+                        .accessibilityHidden(true)
                     Text(workspace.clientName)
                         .font(.subheadline)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -256,6 +265,8 @@ struct WorkspaceDetailView: View {
                             }
                         }
                         .frame(height: 6)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(progress >= 1 ? "Weekly goal reached" : "\(Int(progress * 100)) percent of weekly goal, \(TimeFormatter.shortFormat(workspace.weeklyGoal - tallyStore.teamTotalWeeklyHours(for: workspace))) remaining")
                         HStack {
                             Text("\(Int(progress * 100))% of weekly goal")
                                 .font(.caption)
@@ -271,6 +282,7 @@ struct WorkspaceDetailView: View {
                                     .foregroundStyle(.green)
                             }
                         }
+                        .accessibilityHidden(true)
                     }
                 }
             }
@@ -328,6 +340,7 @@ struct WorkspaceDetailView: View {
                     Button { showEdit = true } label: {
                         Image(systemName: "pencil")
                     }
+                    .accessibilityLabel("Edit workspace")
                 }
             }
             if canManage {
@@ -335,6 +348,7 @@ struct WorkspaceDetailView: View {
                     Button { showInvite = true } label: {
                         Image(systemName: "person.badge.plus")
                     }
+                    .accessibilityLabel("Invite member")
                 }
             }
         }
@@ -393,17 +407,25 @@ private struct MemberRow: View {
     let onRemove: () -> Void
     let onAccept: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var pendingColor: Color {
+        colorScheme == .dark ? .orange : Color(red: 0.65, green: 0.30, blue: 0.0)
+    }
+
     var body: some View {
         HStack {
             Image(systemName: "person.circle.fill")
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.invitedEmail)
                     .font(.subheadline)
                 Text(member.isPending ? "Invite pending" : member.role.capitalized)
                     .font(.caption)
-                    .foregroundStyle(member.isPending ? .orange : .secondary)
+                    .foregroundStyle(member.isPending ? pendingColor : .secondary)
             }
+            .accessibilityElement(children: .combine)
             Spacer()
             if !member.isPending {
                 VStack(alignment: .trailing, spacing: 2) {
@@ -418,12 +440,20 @@ private struct MemberRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel({
+                    var parts: [String] = []
+                    if let weekly = weeklyHours { parts.append("\(TimeFormatter.accessibleFormat(weekly)) this week") }
+                    if let allTime = allTimeHours { parts.append("\(TimeFormatter.accessibleFormat(allTime)) total") }
+                    return parts.joined(separator: ", ")
+                }())
             }
             if isCurrentUser && member.isPending {
                 Button("Accept") { onAccept() }
                     .font(.subheadline)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                    .accessibilityHint("Accepts your invite to this workspace")
             } else if (canChangeRole || canRemove) && !member.isPending {
                 Menu {
                     if canChangeRole {
@@ -445,6 +475,7 @@ private struct MemberRow: View {
                     Image(systemName: "ellipsis.circle")
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityLabel("Manage \(member.invitedEmail)")
             }
         }
     }

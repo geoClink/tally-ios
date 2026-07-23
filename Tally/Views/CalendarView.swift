@@ -213,6 +213,7 @@ struct CalendarView: View {
                     if totalHours > 0 {
                         Text(TimeFormatter.shortFormat(totalHours) + " total")
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -227,6 +228,7 @@ struct CalendarView: View {
                             .foregroundStyle(.secondary)
                         Text("No sessions")
                             .font(.subheadline)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -245,6 +247,7 @@ struct CalendarView: View {
                             Spacer()
                             Text(TimeFormatter.shortFormat(session.hours))
                                 .font(.subheadline)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -257,6 +260,7 @@ struct CalendarView: View {
                         .foregroundStyle(.secondary)
                     Text("Select a day")
                         .font(.subheadline)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
