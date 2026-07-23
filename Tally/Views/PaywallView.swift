@@ -8,8 +8,13 @@ import StoreKit
 
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var purchases = PurchaseManager.shared
     @State private var showError = false
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
 
     var body: some View {
         NavigationStack {
@@ -85,7 +90,7 @@ struct PaywallView: View {
                                 VStack(spacing: 6) {
                                     Text("Tally Business is a 1-month auto-renewing subscription at \(purchases.businessProduct?.displayPrice ?? "$4.99")/month. Cancel anytime in App Store settings.")
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(captionColor)
                                         .multilineTextAlignment(.center)
                                     HStack(spacing: 16) {
                                         Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
@@ -121,11 +126,11 @@ struct PaywallView: View {
 
                     HStack(spacing: 12) {
                         Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
-                        Text("·").foregroundStyle(.secondary)
+                        Text("·").foregroundStyle(captionColor)
                         Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                     }
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(captionColor)
                     .padding(.bottom)
                 }
             }

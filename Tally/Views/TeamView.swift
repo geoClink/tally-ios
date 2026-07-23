@@ -130,10 +130,15 @@ struct TeamView: View {
 
 private struct WorkspaceCard: View {
     @Environment(TallyStore.self) var tallyStore
+    @Environment(\.colorScheme) private var colorScheme
     let workspace: WorkspaceModel
 
     private var memberCount: Int {
         tallyStore.workspaceMembers.filter { $0.workspaceId == workspace.id }.count
+    }
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
     }
 
     var body: some View {
@@ -146,7 +151,7 @@ private struct WorkspaceCard: View {
             HStack {
                 Text("\(memberCount) member\(memberCount == 1 ? "" : "s")")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(captionColor)
                 Spacer()
                 Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
                     .font(.caption.bold())
@@ -154,11 +159,11 @@ private struct WorkspaceCard: View {
                 if workspace.weeklyGoal > 0 {
                     Text("of \(TimeFormatter.shortFormat(workspace.weeklyGoal))")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(captionColor)
                 } else {
                     Text("this week")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(captionColor)
                 }
             }
             if workspace.weeklyGoal > 0 {
@@ -209,8 +214,13 @@ private struct DeleteWorkspaceButton: View {
 
 struct WorkspaceDetailView: View {
     @Environment(TallyStore.self) var tallyStore
+    @Environment(\.colorScheme) private var colorScheme
     let workspace: WorkspaceModel
     @State private var showInvite = false
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
     @State private var showEdit = false
     @State private var inviteEmail = ""
     @State private var memberToRemove: WorkspaceMember?
@@ -270,12 +280,12 @@ struct WorkspaceDetailView: View {
                         HStack {
                             Text("\(Int(progress * 100))% of weekly goal")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(captionColor)
                             Spacer()
                             if progress < 1 {
                                 Text("\(TimeFormatter.shortFormat(workspace.weeklyGoal - tallyStore.teamTotalWeeklyHours(for: workspace))) remaining")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(captionColor)
                             } else {
                                 Text("Goal reached!")
                                     .font(.caption)
@@ -413,6 +423,10 @@ private struct MemberRow: View {
         colorScheme == .dark ? .orange : Color(red: 0.65, green: 0.30, blue: 0.0)
     }
 
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
+
     var body: some View {
         HStack {
             Image(systemName: "person.circle.fill")
@@ -437,7 +451,7 @@ private struct MemberRow: View {
                     if let allTime = allTimeHours {
                         Text("\(TimeFormatter.shortFormat(allTime)) total")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(captionColor)
                     }
                 }
                 .accessibilityElement(children: .ignore)
@@ -542,6 +556,11 @@ private struct InviteMemberSheet: View {
     @Binding var email: String
     let onInvite: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
 
     var body: some View {
         NavigationStack {
@@ -556,7 +575,7 @@ private struct InviteMemberSheet: View {
                 Section {
                     Text("Once they create a Tally account with this email, they'll automatically be added to the workspace.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(captionColor)
                 }
             }
             .navigationTitle("Invite Member")

@@ -18,6 +18,14 @@ struct ProgressBarView: View {
     private var captionColor: Color {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
     }
+
+    private var accessibleOrange: Color {
+        colorScheme == .dark ? .orange : Color(red: 0.65, green: 0.30, blue: 0.0)
+    }
+
+    private var accessibleRed: Color {
+        colorScheme == .dark ? .red : Color(red: 0.75, green: 0.0, blue: 0.04)
+    }
     
     private var progress: Double {
         min(value / goal, 1.0)
@@ -58,9 +66,22 @@ struct ProgressBarView: View {
                     .font(.caption)
                     .foregroundStyle(captionColor)
                 Spacer()
-                Text("\(Int(progress * 100))% of \(TimeFormatter.shortFormat(goal)) goal")
-                    .font(.caption)
-                    .foregroundStyle(captionColor)
+                HStack(spacing: 4) {
+                    if progress >= 1.0 {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(accessibleRed)
+                            .accessibilityHidden(true)
+                    } else if progress >= 0.8 {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(accessibleOrange)
+                            .accessibilityHidden(true)
+                    }
+                    Text("\(Int(progress * 100))% of \(TimeFormatter.shortFormat(goal)) goal")
+                        .font(.caption)
+                        .foregroundStyle(captionColor)
+                }
             }
         }
         .accessibilityElement(children: .ignore)

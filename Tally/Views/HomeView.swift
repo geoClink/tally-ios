@@ -27,6 +27,10 @@ struct HomeView: View {
     private var accessibleRed: Color {
         colorScheme == .dark ? .red : Color(red: 0.75, green: 0.0, blue: 0.04)
     }
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
     @State private var showClientPicker = false
     @State private var showManualEntry = false
     @State private var showGoalSetting = false
@@ -62,7 +66,7 @@ struct HomeView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(goal.client)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(captionColor)
                             ProgressBarView(
                                 value: tallyStore.weeklyHours(for: goal.client),
                                 goal: goal.weeklyHours
@@ -85,7 +89,7 @@ struct HomeView: View {
                             .foregroundStyle(.secondary)
                         Text("Tap Start to begin tracking your first session")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(captionColor)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }

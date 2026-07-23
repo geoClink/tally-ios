@@ -26,6 +26,11 @@ struct ReportsView: View {
     @State private var showEditSession = false
     private let purchases = PurchaseManager.shared
     private let exportTip = ExportLockedTip()
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
     
     private var topClientsForChart: [(String, Double)] {
         Array(allTimeByClient.prefix(20))
@@ -95,12 +100,13 @@ struct ReportsView: View {
                                         Spacer()
                                         VStack(alignment: .trailing, spacing: 2) {
                                             Text(TimeFormatter.shortFormat(hours))
+                                                .foregroundStyle(.secondary)
                                             if rate > 0 {
                                                 Text((hours * rate).formatted(.currency(code: "USD")))
                                                     .font(.caption)
+                                                    .foregroundStyle(captionColor)
                                             }
                                         }
-                                        .foregroundStyle(.secondary)
                                     }
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel(rate > 0
@@ -128,7 +134,7 @@ struct ReportsView: View {
                                         .annotation(position: .top) {
                                             Text(TimeFormatter.shortFormat(hours))
                                                 .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                                                .foregroundStyle(captionColor)
                                         }
                                     }
                                     .chartYAxis {
@@ -171,12 +177,13 @@ struct ReportsView: View {
                                             Spacer()
                                             VStack(alignment: .trailing, spacing: 2) {
                                                 Text(TimeFormatter.shortFormat(hours))
+                                                    .foregroundStyle(.secondary)
                                                 if rate > 0 {
                                                     Text((hours * rate).formatted(.currency(code: "USD")))
                                                         .font(.caption)
+                                                        .foregroundStyle(captionColor)
                                                 }
                                             }
-                                            .foregroundStyle(.secondary)
                                         }
                                     }
                                     .accessibilityElement(children: .ignore)
@@ -208,7 +215,7 @@ struct ReportsView: View {
                                         if let note = session.taskNote, !note.isEmpty {
                                             Text(note)
                                                 .font(.caption)
-                                                .foregroundStyle(.secondary)
+                                                .foregroundStyle(captionColor)
                                         }
                                     }
                                     .accessibilityElement(children: .combine)
@@ -228,7 +235,7 @@ struct ReportsView: View {
                                             .font(.subheadline)
                                         Text(session.date ?? "")
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(captionColor)
                                     }
                                     .accessibilityElement(children: .combine)
                                 }

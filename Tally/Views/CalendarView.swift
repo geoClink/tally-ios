@@ -10,8 +10,13 @@ import SwiftUI
 struct CalendarView: View {
     @Environment(TallyStore.self) var tallyStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedMonth = Date()
     @State private var selectedDate: Date? = Date()
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
 
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -141,7 +146,7 @@ struct CalendarView: View {
                 ForEach(weekdays, id: \.self) { day in
                     Text(day)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(captionColor)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -187,13 +192,13 @@ struct CalendarView: View {
 
             // Legend
             HStack(spacing: 16) {
-                Text("Less").font(.caption2).foregroundStyle(.secondary)
+                Text("Less").font(.caption2).foregroundStyle(captionColor)
                 ForEach([0.2, 0.4, 0.6, 0.8, 1.0], id: \.self) { intensity in
                     Circle()
                         .fill(Color.blue.opacity(intensity))
                         .frame(width: 10, height: 10)
                 }
-                Text("More").font(.caption2).foregroundStyle(.secondary)
+                Text("More").font(.caption2).foregroundStyle(captionColor)
             }
 
             Spacer()
@@ -241,7 +246,7 @@ struct CalendarView: View {
                                 if session.isManual {
                                     Text("Manual entry")
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(captionColor)
                                 }
                             }
                             Spacer()

@@ -12,7 +12,12 @@ struct TaskNoteSheet: View {
     let onSkip: () -> Void
     let onSave: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isFocused: Bool
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
 
     private var roundedTo15: Double {
         (hours * 4).rounded() / 4
@@ -67,7 +72,7 @@ struct TaskNoteSheet: View {
                     .font(.title3.bold())
                 Text("Optional — helps you remember later")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(captionColor)
             }
             .padding(.bottom, 20)
             .accessibilityElement(children: .combine)

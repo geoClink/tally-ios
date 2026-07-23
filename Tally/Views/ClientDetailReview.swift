@@ -17,6 +17,11 @@ struct ClientDetailView: View {
     @State private var showPaywall = false
     private let purchases = PurchaseManager.shared
     private let invoiceTip = InvoiceLockedTip()
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var captionColor: Color {
+        colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
     @State private var selectedRange: ExportRange = .allTime
     
     private var filteredSessions: [SessionModel] {
@@ -55,7 +60,7 @@ struct ClientDetailView: View {
                             .fontWeight(.bold)
                         Text("Total hours")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(captionColor)
                     }
                     Spacer()
                     if hourlyRate > 0 {
@@ -65,7 +70,7 @@ struct ClientDetailView: View {
                                 .fontWeight(.bold)
                             Text("Total earnings")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(captionColor)
                         }
                     }
                 }
@@ -90,7 +95,7 @@ struct ClientDetailView: View {
                             Spacer()
                         }
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(captionColor)
                     }
                 }
             }
@@ -176,7 +181,7 @@ struct ClientDetailView: View {
                                 if let note = session.taskNote, !note.isEmpty {
                                     Text(note)
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(captionColor)
                                 }
                             }
                             Spacer()
@@ -186,7 +191,7 @@ struct ClientDetailView: View {
                                 if hourlyRate > 0 {
                                     Text((session.hours * hourlyRate).formatted(.currency(code: "USD")))
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(captionColor)
                                 }
                             }
                         }
