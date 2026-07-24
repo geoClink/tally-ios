@@ -7,6 +7,7 @@ import SwiftUI
 import Auth
 import Supabase
 import TipKit
+import GoogleSignIn
 
 @main
 struct TallyApp: App {
@@ -20,6 +21,10 @@ struct TallyApp: App {
         ])
         // Boot PurchaseManager so it starts listening for transactions immediately
         _ = PurchaseManager.shared
+        // Configure Google Sign-In
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: "642377971570-6at6jltqmpi05ltpn4fek94m54488tqr.apps.googleusercontent.com"
+        )
     }
 
     var body: some Scene {
@@ -27,6 +32,9 @@ struct TallyApp: App {
             ContentView()
                 .environment(tallyStore)
                 .onOpenURL { url in
+                    // Google Sign-In callback
+                    if GIDSignIn.sharedInstance.handle(url) { return }
+                    // Supabase auth callback
                     Task {
                         try? await supabase.auth.session(from: url)
                     }

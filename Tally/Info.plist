@@ -18,6 +18,16 @@
 				<string>tally</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps.642377971570-6at6jltqmpi05ltpn4fek94m54488tqr</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.642377971570-6at6jltqmpi05ltpn4fek94m54488tqr</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

@@ -13,6 +13,7 @@ struct AccountView: View {
     @State private var userEmail: String = ""
     @State private var showDeleteConfirmation = false
     @State private var showPaywall = false
+    @State private var showSupportSheet = false
     private let purchases = PurchaseManager.shared
 
     var body: some View {
@@ -102,6 +103,14 @@ struct AccountView: View {
                 }
 
                 Section {
+                    Button {
+                        showSupportSheet = true
+                    } label: {
+                        Label("Report a Problem", systemImage: "exclamationmark.bubble")
+                    }
+                }
+
+                Section {
                     Button(role: .destructive) {
                         Task {
                             try? await supabase.auth.signOut()
@@ -121,6 +130,9 @@ struct AccountView: View {
             .navigationTitle("Account")
             .task { await loadEmail() }
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showSupportSheet) {
+                SupportSheet(userEmail: userEmail)
+            }
             .alert("Delete Account", isPresented: $showDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
                     Task {

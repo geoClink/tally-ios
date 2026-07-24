@@ -18,6 +18,8 @@
 		DEC2CD072FC94324008EBF15 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DEC2CD062FC94324008EBF15 /* SwiftUI.framework */; };
 		DEC2CD182FC94325008EBF15 /* TallyWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DEC2CD032FC94324008EBF15 /* TallyWidgetsExtension.appex */; platformFilters = (ios, maccatalyst, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DEFCA0002FCB69B40056FC95 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = DEFC9FFF2FCB69B40056FC95 /* Config.xcconfig */; };
+		DEFF9C473013CC0400D5B1F3 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DEFF9C463013CC0400D5B1F3 /* GoogleSignIn */; };
+		DEFF9C493013CC0400D5B1F3 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = DEFF9C483013CC0400D5B1F3 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -137,8 +139,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DEFF9C473013CC0400D5B1F3 /* GoogleSignIn in Frameworks */,
 				DE721C032FC8E7EB00E688D4 /* PostgREST in Frameworks */,
 				DEC2CCFC2FC9417E008EBF15 /* WatchConnectivity.framework in Frameworks */,
+				DEFF9C493013CC0400D5B1F3 /* GoogleSignInSwift in Frameworks */,
 				DE721C012FC8E7EB00E688D4 /* Auth in Frameworks */,
 				DE721C052FC8E7EB00E688D4 /* Supabase in Frameworks */,
 			);
@@ -226,6 +230,8 @@
 				DE721C002FC8E7EB00E688D4 /* Auth */,
 				DE721C022FC8E7EB00E688D4 /* PostgREST */,
 				DE721C042FC8E7EB00E688D4 /* Supabase */,
+				DEFF9C463013CC0400D5B1F3 /* GoogleSignIn */,
+				DEFF9C483013CC0400D5B1F3 /* GoogleSignInSwift */,
 			);
 			productName = Tally;
 			productReference = DE0DA3332FC8641A000110F0 /* Tally.app */;
@@ -307,6 +313,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				DEFF9C453013CC0400D5B1F3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DE0DA3342FC8641A000110F0 /* Products */;
@@ -521,7 +528,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Tally/Tally.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -542,7 +549,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -567,7 +574,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Tally/Tally.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -588,7 +595,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -612,7 +619,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Tally Watch Watch App/Tally Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -623,7 +630,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -646,7 +653,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Tally Watch Watch App/Tally Watch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -657,7 +664,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -680,7 +687,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TallyWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TallyWidgets/Info.plist;
@@ -691,7 +698,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.TallyWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -711,7 +718,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = TallyWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = S4RSN4KFD3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TallyWidgets/Info.plist;
@@ -722,7 +729,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.3;
+				MARKETING_VERSION = 1.4.4;
 				PRODUCT_BUNDLE_IDENTIFIER = name.GeorgeClinkscales.Tally.TallyWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -785,6 +792,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		DEFF9C453013CC0400D5B1F3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.2.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -802,6 +817,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DE721BFF2FC8E7EB00E688D4 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		DEFF9C463013CC0400D5B1F3 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DEFF9C453013CC0400D5B1F3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		DEFF9C483013CC0400D5B1F3 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DEFF9C453013CC0400D5B1F3 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

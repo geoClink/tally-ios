@@ -131,7 +131,7 @@ private struct PlansPage: View {
 
             Spacer()
 
-            VStack(spacing: 12) {
+            VStack(spacing: 20) {
                 Button {
                     onGetStarted()
                 } label: {

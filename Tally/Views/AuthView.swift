@@ -9,6 +9,7 @@ import SwiftUI
 import Supabase
 import AuthenticationServices
 import CryptoKit
+import GoogleSignIn
 
 struct AuthView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -197,15 +198,28 @@ struct AuthView: View {
     }
 
     private func handleGoogleSignIn() async {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            errorMessage = "Unable to present Google Sign-In."
+            return
+        }
         isLoading = true
         do {
-            try await supabase.auth.signInWithOAuth(
-                provider: .google,
-                redirectTo: URL(string: "name.GeorgeClinkscales.Tally://callback")
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            guard let idToken = result.user.idToken?.tokenString else {
+                errorMessage = "Unable to get ID token from Google."
+                isLoading = false
+                return
+            }
+            let accessToken = result.user.accessToken.tokenString
+            try await supabase.auth.signInWithIdToken(
+                credentials: .init(provider: .google, idToken: idToken, accessToken: accessToken)
             )
             NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
         } catch {
-            errorMessage = error.localizedDescription
+            if (error as? GIDSignInError)?.code != .canceled {
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }
@@ -225,6 +239,14 @@ struct AuthView: View {
                 try await supabase.auth.signInWithIdToken(
                     credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
                 )
+                // Apple only sends fullName on first sign-in — save it to user metadata immediately
+                if let fullName = credential.fullName {
+                    let formatter = PersonNameComponentsFormatter()
+                    let displayName = formatter.string(from: fullName)
+                    if !displayName.isEmpty {
+                        try? await supabase.auth.update(user: .init(data: ["full_name": .string(displayName)]))
+                    }
+                }
                 NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
             } catch {
                 errorMessage = error.localizedDescription
