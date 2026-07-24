@@ -36,6 +36,51 @@ struct AccountView: View {
                     .accessibilityLabel(userEmail.isEmpty ? "Account loading" : "\(userEmail), \(tierLabel) plan")
                 }
 
+                if purchases.currentTier == .free,
+                   purchases.businessIntroOffer?.paymentMode == .freeTrial {
+                    Section {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Try Business Free")
+                                        .font(.headline)
+                                    Text("7 days free, then \(purchases.businessProduct?.displayPrice ?? "$4.99")/month")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "sparkles")
+                                    .font(.title2)
+                                    .foregroundStyle(.purple)
+                                    .accessibilityHidden(true)
+                            }
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Label("Stripe invoice payments", systemImage: "checkmark")
+                                Label("Team workspaces", systemImage: "checkmark")
+                                Label("All Pro features included", systemImage: "checkmark")
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+
+                            Button {
+                                showPaywall = true
+                            } label: {
+                                Text("Start Free Trial")
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(.purple, in: RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Start free trial for Tally Business")
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowBackground(Color.purple.opacity(0.07))
+                }
+
                 Section("Subscription") {
                     HStack {
                         Label("Current Plan", systemImage: "crown.fill")

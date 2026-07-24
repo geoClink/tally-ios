@@ -11,9 +11,24 @@ struct PaywallView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var purchases = PurchaseManager.shared
     @State private var showError = false
+    @State private var isEligibleForTrial = false
 
     private var captionColor: Color {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
+    }
+
+    private var businessPriceLabel: String {
+        guard let product = purchases.businessProduct else { return "$4.99/month" }
+        if purchases.businessIntroOffer?.paymentMode == .freeTrial {
+            return "7 days free, then \(product.displayPrice)/month"
+        }
+        return product.displayPrice + "/month"
+    }
+
+    private var businessPurchaseLabel: String {
+        isEligibleForTrial && purchases.businessIntroOffer?.paymentMode == .freeTrial
+            ? "Start Free Trial"
+            : "Get Tally Business"
     }
 
     var body: some View {
@@ -77,7 +92,7 @@ struct PaywallView: View {
 
                         TierCard(
                             name: "Tally Business",
-                            price: purchases.businessProduct.map { $0.displayPrice + "/month" } ?? "$4.99/month",
+                            price: businessPriceLabel,
                             color: .purple,
                             features: [
                                 "Everything in Pro",
@@ -86,12 +101,19 @@ struct PaywallView: View {
                                 "Shared client tracking"
                             ],
                             isCurrent: purchases.currentTier == .business,
+                            purchaseLabel: businessPurchaseLabel,
                             subscriptionFooter: AnyView(
                                 VStack(spacing: 6) {
-                                    Text("Tally Business is a 1-month auto-renewing subscription at \(purchases.businessProduct?.displayPrice ?? "$4.99")/month. Cancel anytime in App Store settings.")
-                                        .font(.caption)
-                                        .foregroundStyle(captionColor)
-                                        .multilineTextAlignment(.center)
+                                    Group {
+                                        if purchases.businessIntroOffer?.paymentMode == .freeTrial {
+                                            Text("Includes a 7-day free trial. After the trial, Tally Business is \(purchases.businessProduct?.displayPrice ?? "$4.99")/month, auto-renewing. Cancel anytime in App Store settings.")
+                                        } else {
+                                            Text("Tally Business is a 1-month auto-renewing subscription at \(purchases.businessProduct?.displayPrice ?? "$4.99")/month. Cancel anytime in App Store settings.")
+                                        }
+                                    }
+                                    .font(.caption)
+                                    .foregroundStyle(captionColor)
+                                    .multilineTextAlignment(.center)
                                     HStack(spacing: 16) {
                                         Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
                                         Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
@@ -162,6 +184,7 @@ struct PaywallView: View {
                 if purchases.products.isEmpty {
                     await purchases.refresh()
                 }
+                isEligibleForTrial = await purchases.isEligibleForBusinessTrial()
             }
             .onChange(of: purchases.currentTier) { _, tier in
                 if tier > .free { dismiss() }
@@ -176,6 +199,7 @@ private struct TierCard: View {
     let color: Color
     let features: [String]
     var isCurrent: Bool = false
+    var purchaseLabel: String? = nil
     var subscriptionFooter: AnyView? = nil
     var onPurchase: (() -> Void)? = nil
 
@@ -213,7 +237,7 @@ private struct TierCard: View {
                 Button {
                     onPurchase()
                 } label: {
-                    Text("Get \(name)")
+                    Text(purchaseLabel ?? "Get \(name)")
                         .font(.headline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)

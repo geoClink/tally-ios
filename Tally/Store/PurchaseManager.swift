@@ -49,6 +49,14 @@ final class PurchaseManager {
     var proProduct: Product?      { products.first { $0.id == Self.proID } }
     var businessProduct: Product? { products.first { $0.id == Self.businessID } }
 
+    var businessIntroOffer: Product.SubscriptionOffer? {
+        businessProduct?.subscription?.introductoryOffer
+    }
+
+    func isEligibleForBusinessTrial() async -> Bool {
+        await businessProduct?.subscription?.isEligibleForIntroOffer ?? false
+    }
+
     func purchase(_ product: Product) async {
         isPurchasing = true
         errorMessage = nil
