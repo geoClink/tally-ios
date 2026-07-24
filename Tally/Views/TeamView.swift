@@ -14,10 +14,14 @@ struct TeamView: View {
     @State private var showPaywall = false
     private let purchases = PurchaseManager.shared
 
+    private var subscriptionExpired: Bool {
+        !purchases.hasTeamWorkspaces && !tallyStore.workspaces.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
             Group {
-                if !purchases.hasTeamWorkspaces {
+                if !purchases.hasTeamWorkspaces && tallyStore.workspaces.isEmpty {
                     upsellView
                 } else if tallyStore.workspaces.isEmpty {
                     emptyStateView
@@ -54,6 +58,30 @@ struct TeamView: View {
 
     private var workspaceList: some View {
         List {
+            if subscriptionExpired {
+                Section {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Business subscription expired")
+                                .font(.subheadline.bold())
+                            Text("Your workspaces are read-only. Renew to invite members and manage teams.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Renew") { showPaywall = true }
+                            .font(.caption.bold())
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                            .tint(.orange)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .listRowBackground(Color.orange.opacity(0.08))
+            }
             ForEach(tallyStore.workspaces) { workspace in
                 NavigationLink {
                     WorkspaceDetailView(workspace: workspace)
@@ -217,6 +245,7 @@ struct WorkspaceDetailView: View {
     @Environment(\.colorScheme) private var colorScheme
     let workspace: WorkspaceModel
     @State private var showInvite = false
+    private let purchases = PurchaseManager.shared
 
     private var captionColor: Color {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
@@ -345,7 +374,7 @@ struct WorkspaceDetailView: View {
         .navigationTitle(workspace.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            if isOwner {
+            if isOwner && purchases.hasTeamWorkspaces {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showEdit = true } label: {
                         Image(systemName: "pencil")
@@ -353,7 +382,7 @@ struct WorkspaceDetailView: View {
                     .accessibilityLabel("Edit workspace")
                 }
             }
-            if canManage {
+            if canManage && purchases.hasTeamWorkspaces {
                 ToolbarItem(placement: .primaryAction) {
                     Button { showInvite = true } label: {
                         Image(systemName: "person.badge.plus")
@@ -367,11 +396,8 @@ struct WorkspaceDetailView: View {
         }
         .sheet(isPresented: $showInvite) {
             InviteMemberSheet(email: $inviteEmail) {
-                Task {
-                    await tallyStore.inviteMember(email: inviteEmail, to: workspace)
-                    inviteEmail = ""
-                    showInvite = false
-                }
+                await tallyStore.inviteMember(email: inviteEmail, to: workspace)
+                inviteEmail = ""
             }
         }
         .sheet(isPresented: $showEdit) {
@@ -468,7 +494,15 @@ private struct MemberRow: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     .accessibilityHint("Accepts your invite to this workspace")
-            } else if (canChangeRole || canRemove) && !member.isPending {
+            } else if member.isPending && canRemove {
+                Button(role: .destructive) { onRemove() } label: {
+                    Label("Cancel Invite", systemImage: "xmark.circle")
+                        .labelStyle(.iconOnly)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancel invite for \(member.invitedEmail)")
+            } else if (canChangeRole || canRemove) {
                 Menu {
                     if canChangeRole {
                         Button {
@@ -554,40 +588,128 @@ private struct CreateWorkspaceSheet: View {
 
 private struct InviteMemberSheet: View {
     @Binding var email: String
-    let onInvite: () -> Void
+    let onInvite: () async -> Void
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
 
-    private var captionColor: Color {
-        colorScheme == .dark ? .secondary : Color(white: 0.40)
-    }
+    @State private var isSending = false
+    @State private var didSend = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Email Address") {
-                    TextField("colleague@example.com", text: $email)
-                        #if os(iOS)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        #endif
-                }
-                Section {
-                    Text("Once they create a Tally account with this email, they'll automatically be added to the workspace.")
-                        .font(.caption)
-                        .foregroundStyle(captionColor)
+            VStack(spacing: 0) {
+                if didSend {
+                    successView
+                } else {
+                    formView
                 }
             }
             .navigationTitle("Invite Member")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Send Invite") { onInvite() }
-                        .disabled(!isValidEmail)
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private var formView: some View {
+        VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.1))
+                        .frame(width: 64, height: 64)
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.blue)
+                }
+                Text("Invite a Team Member")
+                    .font(.title3.bold())
+                Text("They'll get access once they sign in to Tally with this email address.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+            }
+            .padding(.top, 28)
+
+            // Email field
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Email Address")
+                    .font(.footnote.bold())
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+                TextField("colleague@example.com", text: $email)
+                    #if os(iOS)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .textContentType(.emailAddress)
+                    #endif
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .padding(.horizontal, 24)
+
+            Spacer()
+
+            // Send button
+            Button {
+                Task {
+                    isSending = true
+                    await onInvite()
+                    isSending = false
+                    withAnimation { didSend = true }
+                    try? await Task.sleep(for: .seconds(1.6))
+                    dismiss()
+                }
+            } label: {
+                Group {
+                    if isSending {
+                        HStack(spacing: 8) {
+                            ProgressView().tint(.white)
+                            Text("Sending…")
+                        }
+                    } else {
+                        Text("Send Invite")
+                    }
+                }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(isValidEmail && !isSending ? Color.blue : Color.blue.opacity(0.4),
+                            in: RoundedRectangle(cornerRadius: 14))
+            }
+            .disabled(!isValidEmail || isSending)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+        }
+    }
+
+    private var successView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.12))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 44))
+                    .foregroundStyle(.green)
+            }
+            Text("Invite Sent")
+                .font(.title3.bold())
+            Text("We'll add \(email) to the workspace as soon as they sign in.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            Spacer()
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
 
     private var isValidEmail: Bool {

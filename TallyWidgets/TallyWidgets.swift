@@ -65,23 +65,45 @@ struct TallySmallWidgetView: View {
     private var progress: Double { min(entry.weeklyHours / entry.weeklyGoal, 1.0) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(formatHours(entry.todayHours))
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-            Text("today")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            ProgressView(value: progress)
-                .tint(.blue)
-            Text("\(Int(progress * 100))% of weekly goal")
+        VStack(spacing: 0) {
+            // Circular progress ring with today's hours
+            ZStack {
+                Circle()
+                    .stroke(Color.blue.opacity(0.15), lineWidth: 7)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut(duration: 0.4), value: progress)
+
+                VStack(spacing: 1) {
+                    if entry.todayHours == 0 {
+                        Image(systemName: "timer")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.blue)
+                        Text("Start")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(formatHours(entry.todayHours))
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                            .minimumScaleFactor(0.6)
+                            .lineLimit(1)
+                        Text("today")
+                            .font(.system(size: 10, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(12)
+
+            Text("\(Int(progress * 100))% of goal")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 10)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .widgetURL(URL(string: "tally://timer"))
     }
 }
 
@@ -93,46 +115,136 @@ struct TallyMediumWidgetView: View {
     private var progress: Double { min(entry.weeklyHours / entry.weeklyGoal, 1.0) }
 
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Today")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(formatHours(entry.todayHours))
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Spacer()
-                if entry.topClient != "--" {
-                    Label(entry.topClient, systemImage: "person.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+        HStack(spacing: 16) {
+            // Left: circular ring + today
+            ZStack {
+                Circle()
+                    .stroke(Color.blue.opacity(0.15), lineWidth: 6)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+
+                VStack(spacing: 1) {
+                    if entry.todayHours == 0 {
+                        Image(systemName: "timer")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.blue)
+                        Text("Start")
+                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(formatHours(entry.todayHours))
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(1)
+                        Text("today")
+                            .font(.system(size: 9, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .padding()
+            .frame(width: 80, height: 80)
 
-            Divider()
+            // Right: weekly stats
+            VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("This Week")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(formatHours(entry.weeklyHours))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("This Week")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(formatHours(entry.weeklyHours))
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Spacer()
                 ProgressView(value: progress)
                     .tint(.blue)
-                Text("of \(formatHours(entry.weeklyGoal)) goal")
+
+                HStack {
+                    Text("of \(formatHours(entry.weeklyGoal)) goal")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if entry.topClient != "--" {
+                        Label(entry.topClient, systemImage: "person.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .widgetURL(URL(string: "tally://timer"))
+    }
+}
+
+// MARK: - Lock Screen Circular Widget
+
+struct TallyCircularWidgetView: View {
+    let entry: TallyWidgetEntry
+
+    private var progress: Double { min(entry.weeklyHours / entry.weeklyGoal, 1.0) }
+
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            VStack(spacing: 0) {
+                if entry.todayHours == 0 {
+                    Image(systemName: "timer")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Track")
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                } else {
+                    Text(formatHours(entry.todayHours))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                    Text("today")
+                        .font(.system(size: 8, design: .rounded))
+                }
+            }
+        }
+        .widgetURL(URL(string: "tally://timer"))
+    }
+}
+
+// MARK: - Lock Screen Rectangular Widget
+
+struct TallyRectangularWidgetView: View {
+    let entry: TallyWidgetEntry
+
+    private var progress: Double { min(entry.weeklyHours / entry.weeklyGoal, 1.0) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Image(systemName: "timer")
+                    .font(.caption2)
+                Text("Tally")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .padding()
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(entry.todayHours == 0 ? "No hours yet" : formatHours(entry.todayHours))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                if entry.todayHours > 0 {
+                    Text("today")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ProgressView(value: progress)
+                .tint(.white)
+            Text("\(Int(progress * 100))% of weekly goal")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
         }
+        .widgetURL(URL(string: "tally://timer"))
     }
 }
 
@@ -145,7 +257,11 @@ struct TallyWidgetsEntryView: View {
     var body: some View {
         switch family {
         case .systemMedium: TallyMediumWidgetView(entry: entry)
-        default:            TallySmallWidgetView(entry: entry)
+        #if os(iOS)
+        case .accessoryCircular:    TallyCircularWidgetView(entry: entry)
+        case .accessoryRectangular: TallyRectangularWidgetView(entry: entry)
+        #endif
+        default: TallySmallWidgetView(entry: entry)
         }
     }
 }
@@ -155,6 +271,14 @@ struct TallyWidgetsEntryView: View {
 struct TallyWidgets: Widget {
     let kind = "TallyWidget"
 
+    private var families: [WidgetFamily] {
+        var result: [WidgetFamily] = [.systemSmall, .systemMedium]
+        #if os(iOS)
+        result += [.accessoryCircular, .accessoryRectangular]
+        #endif
+        return result
+    }
+
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: TallyWidgetProvider()) { entry in
             TallyWidgetsEntryView(entry: entry)
@@ -162,11 +286,11 @@ struct TallyWidgets: Widget {
         }
         .configurationDisplayName("Tally")
         .description("See your hours at a glance.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies(families)
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
 #Preview(as: .systemSmall) {
     TallyWidgets()
@@ -179,3 +303,17 @@ struct TallyWidgets: Widget {
 } timeline: {
     TallyWidgetEntry.placeholder
 }
+
+#if os(iOS)
+#Preview(as: .accessoryCircular) {
+    TallyWidgets()
+} timeline: {
+    TallyWidgetEntry.placeholder
+}
+
+#Preview(as: .accessoryRectangular) {
+    TallyWidgets()
+} timeline: {
+    TallyWidgetEntry.placeholder
+}
+#endif

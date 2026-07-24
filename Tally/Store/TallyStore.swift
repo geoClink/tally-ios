@@ -7,6 +7,7 @@
 
 import Foundation
 import Supabase
+import WidgetKit
 
 @MainActor
 @Observable
@@ -231,6 +232,7 @@ class TallyStore {
             topClient: topClient,
             recentClients: recentClients
         )
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func drainPendingQueue() async {
@@ -343,6 +345,23 @@ class TallyStore {
                 .insert(insert)
                 .execute()
             await loadWorkspaceMembers()
+
+            let inviterEmail = try? await supabase.auth.user().email
+            struct InvitePayload: Encodable {
+                let inviterEmail: String?
+                let inviteeEmail: String
+                let workspaceName: String
+                let clientName: String
+            }
+            try? await supabase.functions.invoke(
+                "send-invite-email",
+                options: FunctionInvokeOptions(body: InvitePayload(
+                    inviterEmail: inviterEmail,
+                    inviteeEmail: email,
+                    workspaceName: workspace.name,
+                    clientName: workspace.clientName
+                ))
+            )
         } catch {
             ErrorHandler.shared.handle(error, context: "Inviting member")
         }

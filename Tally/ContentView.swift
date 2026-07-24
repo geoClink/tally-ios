@@ -18,7 +18,7 @@ struct ContentView: View {
     @State private var isAuthenticated = false
     @State private var isLoading = true
     @State private var errorHandler = ErrorHandler.shared
-    @State private var selectedTab: Tab? = .timer
+    @State private var selectedTab: Tab = .timer
 
     var body: some View {
         Group {
@@ -30,7 +30,10 @@ struct ContentView: View {
                 AuthView()
             } else if horizontalSizeClass == .regular {
                 NavigationSplitView {
-                    List(selection: $selectedTab) {
+                    List(selection: Binding<Tab?>(
+                        get: { selectedTab },
+                        set: { selectedTab = $0 ?? .timer }
+                    )) {
                         Label("Timer", systemImage: "timer").tag(Tab.timer)
                         Label("Reports", systemImage: "chart.bar.fill").tag(Tab.reports)
                         Label("Activity", systemImage: "calendar").tag(Tab.activity)
@@ -40,25 +43,30 @@ struct ContentView: View {
                     .navigationTitle("Tally")
                 } detail: {
                     switch selectedTab {
+                    case .timer:    HomeView()
                     case .reports:  ReportsView()
                     case .activity: CalendarView()
                     case .team:     TeamView()
                     case .account:  AccountView()
-                    default:        HomeView()
                     }
                 }
             } else {
-                TabView {
+                TabView(selection: $selectedTab) {
                     HomeView()
                         .tabItem { Label("Timer", systemImage: "timer") }
+                        .tag(Tab.timer)
                     ReportsView()
                         .tabItem { Label("Reports", systemImage: "chart.bar.fill") }
+                        .tag(Tab.reports)
                     CalendarView()
                         .tabItem { Label("Activity", systemImage: "calendar") }
+                        .tag(Tab.activity)
                     TeamView()
                         .tabItem { Label("Team", systemImage: "person.3.fill") }
+                        .tag(Tab.team)
                     AccountView()
                         .tabItem { Label("Account", systemImage: "person.circle") }
+                        .tag(Tab.account)
                 }
             }
         }
@@ -68,6 +76,10 @@ struct ContentView: View {
             }
         } message: {
             Text(errorHandler.currentError ?? "An unknown error occurred")
+        }
+        .onOpenURL { url in
+            guard url.scheme == "tally", url.host == "timer" else { return }
+            selectedTab = .timer
         }
         .task {
             await checkAuth()
