@@ -76,7 +76,7 @@ struct TallyWidgetsLiveActivity: Widget {
                 }
             } compactLeading: {
                 Image(systemName: "timer")
-                    .foregroundStyle(context.state.isPaused ? .orange : .green)
+                    .foregroundStyle(context.state.isPaused ? .orange : .blue)
             } compactTrailing: {
                 if context.state.isPaused {
                     Text(context.state.pausedElapsedText)
