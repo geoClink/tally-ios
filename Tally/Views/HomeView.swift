@@ -160,7 +160,7 @@ struct HomeView: View {
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(RoundedRectangle(cornerRadius: 12).fill(accessibleOrange))
+                                .background(RoundedRectangle(cornerRadius: 12).fill(viewModel.isPaused ? Color.blue : accessibleOrange))
                         }
                         .accessibilityLabel(viewModel.isPaused ? "Resume timer" : "Pause timer")
                         .accessibilityHint(viewModel.isPaused ? "Resumes tracking time for \(viewModel.activeClient)" : "Pauses tracking time for \(viewModel.activeClient)")
