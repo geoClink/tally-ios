@@ -7,8 +7,11 @@
 
 import SwiftUI
 import Supabase
+import AuthenticationServices
+import CryptoKit
 
 struct AuthView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -16,8 +19,10 @@ struct AuthView: View {
     @State private var isLoading = false
     @State private var errorMessage = ""
     @State private var showConfirmationMessage = false
+    @State private var showResetMessage = false
     @State private var showPassword = false
     @State private var showConfirmPassword = false
+    @State private var currentNonce: String?
 
     private var passwordsMatch: Bool {
         password == confirmPassword
@@ -30,108 +35,234 @@ struct AuthView: View {
     }
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                // Brand header
+                VStack(spacing: 6) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 52))
+                        .foregroundStyle(.blue)
+                        .padding(.bottom, 4)
+                        .accessibilityHidden(true)
 
-            Image(systemName: "timer")
-                .font(.system(size: 60))
-                .foregroundStyle(.blue)
-                .accessibilityHidden(true)
+                    Text("Tally")
+                        .font(.system(size: 34, weight: .bold))
 
-            Text("Tally")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                    Text(isSignUp ? "Create your account" : "Sign in to continue")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 64)
+                .padding(.bottom, 32)
 
-            Text(isSignUp ? "Create your account" : "Sign in to continue")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+                // Input fields
+                VStack(spacing: 10) {
+                    StyledTextField("Email", text: $email)
+                        #if os(iOS)
+                        .autocapitalization(.none)
+                        .keyboardType(.emailAddress)
+                        #endif
+                        .textContentType(.emailAddress)
+                        .accessibilityLabel("Email address")
 
-            VStack(spacing: 12) {
-                TextField("Email", text: $email)
-                    .textFieldStyle(.roundedBorder)
-                    #if os(iOS)
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-                    #endif
-                    .accessibilityLabel("Email address")
+                    PasswordField(label: "Password", text: $password, isVisible: $showPassword)
 
-                PasswordField(
-                    label: "Password",
-                    text: $password,
-                    isVisible: $showPassword
-                )
+                    if isSignUp {
+                        PasswordField(label: "Confirm Password", text: $confirmPassword, isVisible: $showConfirmPassword)
 
-                if isSignUp {
-                    PasswordField(
-                        label: "Confirm Password",
-                        text: $confirmPassword,
-                        isVisible: $showConfirmPassword
-                    )
-
-                    if !confirmPassword.isEmpty && !passwordsMatch {
-                        Text("Passwords do not match")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
+                        if !confirmPassword.isEmpty && !passwordsMatch {
+                            Text("Passwords do not match")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
-            }
-            .padding(.horizontal)
+                .padding(.horizontal)
 
-            if !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-
-            if showConfirmationMessage {
-                Text("Check your email to confirm your account, then sign in.")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-
-            Button {
-                Task {
-                    await handleAuth()
+                if !errorMessage.isEmpty {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
                 }
-            } label: {
-                Group {
-                    if isLoading {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text(isSignUp ? "Create Account" : "Sign In")
-                            .font(.headline)
+
+                if showConfirmationMessage {
+                    Text("Check your email to confirm your account, then sign in.")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                }
+
+                if showResetMessage {
+                    Text("Password reset link sent — check your email.")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                }
+
+                // Primary action
+                Button {
+                    Task { await handleAuth() }
+                } label: {
+                    Group {
+                        if isLoading {
+                            ProgressView().tint(.white)
+                        } else {
+                            Text(isSignUp ? "Create Account" : "Sign In")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.blue, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(isLoading || !formIsValid)
+                .padding(.horizontal)
+                .padding(.top, 16)
+
+                VStack(spacing: 10) {
+                    Button {
+                        isSignUp.toggle()
+                        errorMessage = ""
+                        confirmPassword = ""
+                        showPassword = false
+                        showConfirmPassword = false
+                    } label: {
+                        Text(isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up")
+                            .font(.subheadline)
+                            .foregroundStyle(.blue)
+                    }
+
+                    if !isSignUp {
+                        Button {
+                            Task { await handleForgotPassword() }
+                        } label: {
+                            Text("Forgot password?")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                .foregroundStyle(.white)
+                .padding(.top, 14)
+
+                // Divider
+                HStack(spacing: 12) {
+                    Rectangle().frame(height: 0.5).foregroundStyle(Color(.systemGray4))
+                    Text("or").font(.caption).foregroundStyle(.secondary)
+                    Rectangle().frame(height: 0.5).foregroundStyle(Color(.systemGray4))
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 20)
+
+                // Social sign-in — both buttons at Google's native 44pt height
+                VStack(spacing: 12) {
+                    Button {
+                        Task { await handleGoogleSignIn() }
+                    } label: {
+                        Image("GoogleSignInButton")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 44)
+                    }
+                    .disabled(isLoading)
+
+                    SignInWithAppleButton(.signIn) { request in
+                        let nonce = randomNonceString()
+                        currentNonce = nonce
+                        request.requestedScopes = [.fullName, .email]
+                        request.nonce = sha256(nonce)
+                    } onCompletion: { result in
+                        Task { await handleAppleSignIn(result) }
+                    }
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                    .frame(width: 188, height: 44)
+                    .cornerRadius(4)
+                    .disabled(isLoading)
+                    .id(colorScheme)
+                }
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color.blue))
-            }
-            .disabled(isLoading || !formIsValid)
-            .padding(.horizontal)
+                .padding(.horizontal)
 
-            Button {
-                isSignUp.toggle()
-                errorMessage = ""
-                confirmPassword = ""
-                showPassword = false
-                showConfirmPassword = false
-            } label: {
-                Text(isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up")
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
+                Spacer().frame(height: 48)
             }
-
-            Spacer()
         }
+    }
+
+    private func handleGoogleSignIn() async {
+        isLoading = true
+        do {
+            try await supabase.auth.signInWithOAuth(
+                provider: .google,
+                redirectTo: URL(string: "name.GeorgeClinkscales.Tally://callback")
+            )
+            NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken,
+                  let idToken = String(data: tokenData, encoding: .utf8),
+                  let nonce = currentNonce else {
+                errorMessage = "Unable to complete Apple Sign In. Please try again."
+                return
+            }
+            isLoading = true
+            do {
+                try await supabase.auth.signInWithIdToken(
+                    credentials: .init(provider: .apple, idToken: idToken, nonce: nonce)
+                )
+                NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            isLoading = false
+        case .failure(let error):
+            if (error as? ASAuthorizationError)?.code != .canceled {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func randomNonceString(length: Int = 32) -> String {
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        _ = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    private func sha256(_ input: String) -> String {
+        let hashedData = SHA256.hash(data: Data(input.utf8))
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
+    }
+
+    private func handleForgotPassword() async {
+        guard !email.isEmpty else {
+            errorMessage = "Enter your email address first."
+            return
+        }
+        isLoading = true
+        errorMessage = ""
+        do {
+            try await supabase.auth.resetPasswordForEmail(email)
+            showResetMessage = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 
     private func handleAuth() async {
@@ -164,6 +295,26 @@ struct AuthView: View {
     }
 }
 
+private struct StyledTextField: View {
+    let label: String
+    @Binding var text: String
+
+    init(_ label: String, text: Binding<String>) {
+        self.label = label
+        self._text = text
+    }
+
+    var body: some View {
+        TextField(label, text: $text)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(uiColor: .systemGray4), lineWidth: 1)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(uiColor: .systemBackground)))
+            )
+    }
+}
+
 private struct PasswordField: View {
     let label: String
     @Binding var text: String
@@ -191,11 +342,11 @@ private struct PasswordField: View {
             }
             .accessibilityLabel(isVisible ? "Hide password" : "Show password")
         }
-        .padding(8)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color(uiColor: .systemGray4), lineWidth: 1)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color(uiColor: .systemBackground)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(Color(uiColor: .systemBackground)))
         )
     }
 }

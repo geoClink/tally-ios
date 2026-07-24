@@ -19,5 +19,9 @@ let supabase: SupabaseClient = {
     guard let key = info["SUPABASE_ANON_KEY"] as? String, !key.isEmpty else {
         fatalError("SUPABASE_ANON_KEY not set — link Config.xcconfig in Xcode project build configurations")
     }
-    return SupabaseClient(supabaseURL: url, supabaseKey: key)
+    return SupabaseClient(
+        supabaseURL: url,
+        supabaseKey: key,
+        options: .init(auth: .init(emitLocalSessionAsInitialSession: true))
+    )
 }()
