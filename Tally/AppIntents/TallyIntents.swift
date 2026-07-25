@@ -28,12 +28,14 @@ struct StartTimerIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         // Write timer state to App Group -- app picks this up on foreground,
         // and TimerViewModel.init() picks it up on cold launch.
-        AppGroupStore.writeTimerState(
-            client: client,
-            startDate: .now,
-            isPaused: false,
-            accumulated: 0
-        )
+        await MainActor.run {
+            AppGroupStore.writeTimerState(
+                client: client,
+                startDate: .now,
+                isPaused: false,
+                accumulated: 0
+            )
+        }
         if #available(iOS 17, *) {
             _ = try? await IntentDonationManager.shared.donate(intent: self)
         }
@@ -49,8 +51,10 @@ struct StopTimerIntent: AppIntent {
     static var openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        UserDefaults(suiteName: AppGroupKey.suiteName)?
-            .set(true, forKey: AppGroupKey.pendingStop)
+        await MainActor.run {
+            UserDefaults(suiteName: AppGroupKey.suiteName)?
+                .set(true, forKey: AppGroupKey.pendingStop)
+        }
         return .result(dialog: "Stopping your Tally timer.")
     }
 }
@@ -73,7 +77,9 @@ struct LogHoursIntent: AppIntent {
             let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
             return f.string(from: Date())
         }()
-        AppGroupStore.appendPendingSession(PendingSession(client: client, hours: hours, date: dateStr))
+        await MainActor.run {
+            AppGroupStore.appendPendingSession(PendingSession(client: client, hours: hours, date: dateStr))
+        }
         if #available(iOS 17, *) {
             _ = try? await IntentDonationManager.shared.donate(intent: self)
         }

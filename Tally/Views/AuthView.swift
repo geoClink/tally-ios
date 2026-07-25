@@ -244,7 +244,7 @@ struct AuthView: View {
                     let formatter = PersonNameComponentsFormatter()
                     let displayName = formatter.string(from: fullName)
                     if !displayName.isEmpty {
-                        try? await supabase.auth.update(user: .init(data: ["full_name": .string(displayName)]))
+                        _ = try? await supabase.auth.update(user: .init(data: ["full_name": .string(displayName)]))
                     }
                 }
                 NotificationCenter.default.post(name: .supabaseAuthStateChanged, object: nil)

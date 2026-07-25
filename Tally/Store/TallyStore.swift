@@ -9,6 +9,19 @@ import Foundation
 import Supabase
 import WidgetKit
 
+private struct TeamHoursParams: Encodable, Sendable {
+    let p_workspace_id: UUID
+    let p_start_date: String?
+
+    private enum CodingKeys: CodingKey { case p_workspace_id, p_start_date }
+
+    nonisolated func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(p_workspace_id, forKey: .p_workspace_id)
+        try c.encodeIfPresent(p_start_date, forKey: .p_start_date)
+    }
+}
+
 @MainActor
 @Observable
 class TallyStore {
@@ -280,10 +293,6 @@ class TallyStore {
         }
     }
 
-    private struct TeamHoursParams: Encodable {
-        let p_workspace_id: UUID
-        let p_start_date: String?
-    }
 
     func loadWorkspaces() async {
         guard let user = try? await supabase.auth.user() else { return }

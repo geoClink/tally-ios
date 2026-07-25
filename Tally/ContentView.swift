@@ -93,8 +93,8 @@ struct ContentView: View {
     
     private func checkAuth() async {
         do {
-            let session = try await supabase.auth.session
-            isAuthenticated = session != nil
+            _ = try await supabase.auth.session
+            isAuthenticated = true
         } catch {
             isAuthenticated = false
         }
