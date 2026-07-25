@@ -12,6 +12,7 @@ import GoogleSignIn
 @main
 struct TallyApp: App {
     @State private var tallyStore = TallyStore()
+    @State private var timerViewModel = TimerViewModel()
 
     init() {
         // Boot TipKit
@@ -31,6 +32,7 @@ struct TallyApp: App {
         WindowGroup {
             ContentView()
                 .environment(tallyStore)
+                .environment(timerViewModel)
                 .onOpenURL { url in
                     // Google Sign-In callback
                     if GIDSignIn.sharedInstance.handle(url) { return }

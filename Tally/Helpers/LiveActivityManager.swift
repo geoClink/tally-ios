@@ -12,7 +12,12 @@ final class LiveActivityManager {
     static let shared = LiveActivityManager()
     private var activity: Activity<TallyTimerAttributes>?
 
-    private init() {}
+    private init() {
+        // On cold launch (app killed while a timer was running), iOS keeps the
+        // Live Activity alive but our in-memory reference is lost. Recover it
+        // so pause/resume/end calls still work.
+        activity = Activity<TallyTimerAttributes>.activities.first
+    }
 
     func start(client: String) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }

@@ -12,11 +12,11 @@ import StoreKit
 
 struct HomeView: View {
     @Environment(TallyStore.self) var tallyStore
+    @Environment(TimerViewModel.self) private var viewModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
-    
+
     @Environment(\.colorScheme) private var colorScheme
-    @State private var viewModel = TimerViewModel()
 
     // System orange fails WCAG AA (2.31:1 vs white). Dark amber passes at 5.3:1.
     private var accessibleOrange: Color {
