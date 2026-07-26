@@ -21,7 +21,7 @@ struct TeamView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if !purchases.hasTeamWorkspaces && tallyStore.workspaces.isEmpty {
+                if !purchases.hasTeamWorkspaces {
                     upsellView
                 } else if tallyStore.workspaces.isEmpty {
                     emptyStateView
@@ -461,6 +461,8 @@ private struct MemberRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.invitedEmail)
                     .font(.subheadline)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Text(member.isPending ? "Invite pending" : member.role.capitalized)
                     .font(.caption)
                     .foregroundStyle(member.isPending ? pendingColor : .secondary)
@@ -632,7 +634,8 @@ private struct InviteMemberSheet: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 16)
             }
             .padding(.top, 28)
 
