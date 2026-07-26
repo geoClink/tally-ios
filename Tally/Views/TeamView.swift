@@ -107,7 +107,7 @@ struct TeamView: View {
             VStack(spacing: 8) {
                 Text("Team Workspaces")
                     .font(.title2.bold())
-                Text("Invite team members, track shared clients, and see everyone's hours in one place.")
+                Text("Invite team members, track shared clients, and see everyone's hours in one place. Each member needs their own Business subscription.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
