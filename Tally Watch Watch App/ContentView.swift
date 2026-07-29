@@ -30,6 +30,19 @@ struct ContentView: View {
                         sessionManager.sendSession(client: selectedClient, hours: hours)
                     }
                 )
+            } else if sessionManager.isPro == false {
+                VStack(spacing: 10) {
+                    Image(systemName: "crown.fill")
+                        .font(.title2)
+                        .foregroundStyle(.yellow)
+                    Text("Tally Pro")
+                        .font(.headline)
+                    Text("Upgrade on your iPhone to use Tally on Apple Watch.")
+                        .font(.caption2)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
             } else if sessionManager.clients.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "iphone.and.arrow.forward")

@@ -9,6 +9,7 @@ struct TaskNoteSheet: View {
     let client: String
     @Binding var hours: Double
     @Binding var noteText: String
+    @Binding var isBillable: Bool
     let onSkip: () -> Void
     let onSave: () -> Void
 
@@ -19,8 +20,10 @@ struct TaskNoteSheet: View {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
     }
 
-    private var roundedTo15: Double {
-        (hours * 4).rounded() / 4
+    private var roundingRule: RoundingRule { .current }
+
+    private var roundedHours: Double {
+        roundingRule.apply(to: hours)
     }
 
     var body: some View {
@@ -55,13 +58,13 @@ struct TaskNoteSheet: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Session complete: \(client), \(TimeFormatter.accessibleFormat(hours))")
 
-                if abs(roundedTo15 - hours) > 0.001 {
-                    Button("Round to \(TimeFormatter.shortFormat(roundedTo15))") {
-                        hours = roundedTo15
+                if roundingRule != .none, abs(roundedHours - hours) > 0.001 {
+                    Button("Round to \(TimeFormatter.shortFormat(roundedHours))") {
+                        hours = roundedHours
                     }
                     .font(.caption)
                     .foregroundStyle(.blue)
-                    .accessibilityHint("Rounds session duration to the nearest 15 minutes")
+                    .accessibilityHint("Rounds session duration to the nearest \(roundingRule.label)")
                 }
             }
             .padding(.bottom, 20)
@@ -101,7 +104,19 @@ struct TaskNoteSheet: View {
             .frame(minHeight: 90)
             .padding(.horizontal)
 
-            Spacer()
+            // Billable toggle
+            HStack {
+                Label(isBillable ? "Billable" : "Non-billable",
+                      systemImage: isBillable ? "dollarsign.circle.fill" : "dollarsign.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(isBillable ? .green : .secondary)
+                Spacer()
+                Toggle("", isOn: $isBillable)
+                    .labelsHidden()
+                    .tint(.green)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 12)
 
             // Actions
             HStack(spacing: 12) {

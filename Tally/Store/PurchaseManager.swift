@@ -107,10 +107,11 @@ final class PurchaseManager {
         currentTier >= .pro || existingCount < 3
     }
 
-    var canExportCSV: Bool      { currentTier >= .pro }
-    var hasFullHistory: Bool    { currentTier >= .pro }
-    var canInvoice: Bool        { currentTier >= .business }
-    var hasTeamWorkspaces: Bool { currentTier >= .business }
+    var canExportCSV: Bool        { currentTier >= .pro }
+    var hasFullHistory: Bool      { currentTier >= .pro }
+    var hasWatchAndWidgets: Bool  { currentTier >= .pro }
+    var canInvoice: Bool          { currentTier >= .business }
+    var hasTeamWorkspaces: Bool   { currentTier >= .business }
 
     func applyHistoryLimit(to sessions: [SessionModel]) -> [SessionModel] {
         guard currentTier == .free else { return sessions }

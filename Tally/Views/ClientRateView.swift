@@ -74,9 +74,15 @@ struct ClientRateView: View {
             }
             .onAppear {
                 let existing = tallyStore.hourlyRate(for: client)
-                if existing > 0 { rateText = String(existing) }
+                if existing > 0 {
+                    rateText = existing.truncatingRemainder(dividingBy: 1) == 0
+                        ? String(Int(existing))
+                        : String(format: "%.2f", existing)
+                }
                 if let budget = tallyStore.budgetHours(for: client) {
-                    budgetText = String(budget)
+                    budgetText = budget.truncatingRemainder(dividingBy: 1) == 0
+                        ? String(Int(budget))
+                        : String(format: "%.1f", budget)
                 }
             }
         }

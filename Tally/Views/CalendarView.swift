@@ -87,18 +87,40 @@ struct CalendarView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if horizontalSizeClass == .regular {
-                    HStack(alignment: .top, spacing: 0) {
-                        calendarPanel
-                            .frame(width: 380)
-                        Divider()
-                        dayDetailPanel
-                            .frame(maxWidth: .infinity)
+            ZStack {
+                GeometryReader { geo in
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.18))
+                            .frame(width: geo.size.width * 0.85)
+                            .blur(radius: 90)
+                            .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                        Circle()
+                            .fill(Color.indigo.opacity(0.12))
+                            .frame(width: geo.size.width * 0.7)
+                            .blur(radius: 75)
+                            .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
                     }
-                } else {
-                    ScrollView {
-                        calendarPanel
+                }
+                .ignoresSafeArea()
+
+                Group {
+                    if horizontalSizeClass == .regular {
+                        HStack(alignment: .top, spacing: 0) {
+                            calendarPanel
+                                .frame(width: 380)
+                            Divider()
+                            dayDetailPanel
+                                .frame(maxWidth: .infinity)
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                calendarPanel
+                                compactDayDetail
+                            }
+                        }
                     }
                 }
             }
@@ -107,6 +129,90 @@ struct CalendarView: View {
                 if tallyStore.sessions.isEmpty {
                     await tallyStore.loadSessions()
                 }
+            }
+        }
+    }
+
+    private var compactDayDetail: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let date = selectedDate {
+                let daySessions = sessions(for: date)
+                let totalHours = daySessions.reduce(0) { $0 + $1.hours }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    // Day header
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                                .font(.headline)
+                            if totalHours > 0 {
+                                Text("\(daySessions.count) session\(daySessions.count == 1 ? "" : "s")")
+                                    .font(.caption)
+                                    .foregroundStyle(captionColor)
+                            }
+                        }
+                        Spacer()
+                        if totalHours > 0 {
+                            Text(TimeFormatter.shortFormat(totalHours))
+                                .font(.title2.bold())
+                                .foregroundStyle(.blue)
+                        }
+                    }
+
+                    if daySessions.isEmpty {
+                        HStack(spacing: 10) {
+                            Image(systemName: "moon.zzz")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                            Text("No sessions logged")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 8)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(daySessions) { session in
+                                NavigationLink(destination: ClientDetailView(client: session.client)) {
+                                    HStack(spacing: 12) {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.blue.opacity(0.7))
+                                            .frame(width: 4)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(session.client)
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundStyle(.primary)
+                                            if let note = session.taskNote, !note.isEmpty {
+                                                Text(note)
+                                                    .font(.caption)
+                                                    .foregroundStyle(captionColor)
+                                                    .lineLimit(1)
+                                            } else if session.isManual {
+                                                Text("Manual entry")
+                                                    .font(.caption)
+                                                    .foregroundStyle(captionColor)
+                                            }
+                                        }
+                                        Spacer()
+                                        Text(TimeFormatter.shortFormat(session.hours))
+                                            .font(.subheadline.bold())
+                                            .foregroundStyle(.blue)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(12)
+                                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(16)
+                .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+                .padding(.horizontal)
+                .padding(.bottom, 24)
             }
         }
     }
@@ -200,8 +306,7 @@ struct CalendarView: View {
                 }
                 Text("More").font(.caption2).foregroundStyle(captionColor)
             }
-
-            Spacer()
+            .padding(.bottom, 8)
         }
         .padding(.top)
     }

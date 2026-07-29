@@ -28,7 +28,7 @@ struct InvoiceLockedTip: Tip {
 }
 
 struct ClientLimitTip: Tip {
-    var title: Text { Text("Free plan includes 1 client") }
+    var title: Text { Text("Free plan includes 3 clients") }
     var message: Text? {
         Text("Upgrade to Tally Pro to track time for unlimited clients.")
     }

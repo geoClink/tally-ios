@@ -50,26 +50,46 @@ struct ClientDetailView: View {
     }
     
     var body: some View {
+        ZStack {
+            GeometryReader { geo in
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.18))
+                        .frame(width: geo.size.width * 0.85)
+                        .blur(radius: 90)
+                        .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                    Circle()
+                        .fill(Color.indigo.opacity(0.12))
+                        .frame(width: geo.size.width * 0.7)
+                        .blur(radius: 75)
+                        .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
+                }
+            }
+            .ignoresSafeArea()
+
         List {
             // Summary card
             Section {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(TimeFormatter.shortFormat(totalHours))
-                            .font(.title)
-                            .fontWeight(.bold)
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .monospacedDigit()
                         Text("Total hours")
-                            .font(.caption)
+                            .font(.caption.weight(.medium))
+                            .tracking(0.3)
                             .foregroundStyle(captionColor)
                     }
                     Spacer()
                     if hourlyRate > 0 {
                         VStack(alignment: .trailing, spacing: 4) {
                             Text(totalAmount.formatted(.currency(code: "USD")))
-                                .font(.title)
-                                .fontWeight(.bold)
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .monospacedDigit()
                             Text("Total earnings")
-                                .font(.caption)
+                                .font(.caption.weight(.medium))
+                                .tracking(0.3)
                                 .foregroundStyle(captionColor)
                         }
                     }
@@ -201,6 +221,8 @@ struct ClientDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        } // ZStack
         .navigationTitle(client)
         .sheet(isPresented: $showRatePicker) {
             ClientRateView(client: client)

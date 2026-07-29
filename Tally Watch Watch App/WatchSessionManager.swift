@@ -7,9 +7,9 @@ import WatchConnectivity
 import Foundation
 import Combine
 
-final class
-WatchSessionManager: NSObject, ObservableObject {
+final class WatchSessionManager: NSObject, ObservableObject {
     @Published var clients: [String] = []
+    @Published var isPro: Bool? = nil  // nil = not yet received context from phone
 
     override init() {
         super.init()
@@ -20,6 +20,9 @@ WatchSessionManager: NSObject, ObservableObject {
         let existing = WCSession.default.receivedApplicationContext
         if let saved = existing["clients"] as? [String] {
             clients = saved
+        }
+        if let pro = existing["isPro"] as? Bool {
+            isPro = pro
         }
     }
 
@@ -40,9 +43,11 @@ extension WatchSessionManager: WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession,
                              didReceiveApplicationContext applicationContext: [String: Any]) {
-        guard let received = applicationContext["clients"] as? [String] else { return }
+        let newClients = applicationContext["clients"] as? [String] ?? []
+        let newIsPro = applicationContext["isPro"] as? Bool
         DispatchQueue.main.async { [weak self] in
-            self?.clients = received
+            self?.clients = newClients
+            if let pro = newIsPro { self?.isPro = pro }
         }
     }
 }

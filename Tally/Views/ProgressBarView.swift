@@ -32,9 +32,19 @@ struct ProgressBarView: View {
     }
     
     private var barColor: Color {
-        if progress >= 1.0 { return .red }
-        if progress >= 0.8 { return .orange }
+        if progress >= 1.0 { return accessibleRed }
+        if progress >= 0.8 { return accessibleOrange }
         return .blue
+    }
+
+    private var barGradient: LinearGradient {
+        if progress >= 1.0 {
+            return LinearGradient(colors: [accessibleRed, accessibleRed.opacity(0.7)], startPoint: .leading, endPoint: .trailing)
+        }
+        if progress >= 0.8 {
+            return LinearGradient(colors: [accessibleOrange, accessibleOrange.opacity(0.7)], startPoint: .leading, endPoint: .trailing)
+        }
+        return LinearGradient(colors: [.blue, .blue.opacity(0.6)], startPoint: .leading, endPoint: .trailing)
     }
     
     private var accessibilityDescription: String {
@@ -51,15 +61,16 @@ struct ProgressBarView: View {
         VStack(alignment: .leading, spacing: 6) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))                        .frame(height: 12)
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(barColor)
-                        .frame(width: geo.size.width * progress, height: 12)
-                        .animation(.easeInOut, value: progress)
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(height: 10)
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(barGradient)
+                        .frame(width: geo.size.width * progress, height: 10)
+                        .animation(.easeInOut(duration: 0.5), value: progress)
                 }
             }
-            .frame(height: 12)
+            .frame(height: 10)
             
             HStack {
                 Text(TimeFormatter.shortFormat(value))

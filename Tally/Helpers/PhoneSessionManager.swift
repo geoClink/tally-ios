@@ -22,10 +22,13 @@ final class PhoneSessionManager: NSObject, ObservableObject {
         WCSession.default.activate()
     }
 
-    func sendClients(_ clients: [String]) {
+    func sendClients(_ clients: [String], isPro: Bool) {
         guard WCSession.default.activationState == .activated,
               WCSession.default.isWatchAppInstalled else { return }
-        try? WCSession.default.updateApplicationContext(["clients": clients])
+        try? WCSession.default.updateApplicationContext([
+            "clients": clients,
+            "isPro": isPro
+        ])
     }
 }
 
@@ -66,7 +69,7 @@ final class PhoneSessionManager {
     static let shared = PhoneSessionManager()
     var onSessionReceived: ((String, Double) async -> Void)?
     private init() {}
-    func sendClients(_ clients: [String]) {}
+    func sendClients(_ clients: [String], isPro: Bool) {}
 }
 
 #endif

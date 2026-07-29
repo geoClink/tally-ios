@@ -11,98 +11,141 @@ struct GoalSettingView: View {
     @Environment(TallyStore.self) var tallyStore
     @Environment(\.dismiss) private var dismiss
 
-    @State private var goalHours: Double = 5.0
+    @State private var goalHours: Double = 40.0
     @State private var clientGoalHours: [String: Double] = [:]
+    @State private var totalGoalEnabled = false
 
-    private var warningHours: Int {
-        Int(goalHours * 0.8)
-    }
+    private var warningHours: Int { Int(goalHours * 0.8) }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Weekly Hour Goal") {
-                    Stepper(
-                        "\(Int(goalHours)) hours per week",
-                        value: $goalHours,
-                        in: 1...80,
-                        step: 1
-                    )
-                    .accessibilityLabel("Weekly hour goal: \(Int(goalHours)) hours")
-                    .accessibilityHint("Double tap and swipe up or down to adjust your weekly hour goal")
-
-                    Slider(value: $goalHours, in: 1...80, step: 1)
-                        .accessibilityLabel("Weekly goal slider")
-                        .accessibilityValue("\(Int(goalHours)) hours per week")
-                        .accessibilityHint("Slide to adjust your weekly hour goal between 1 and 80 hours")
-
-                    Text("You'll get a warning at \(warningHours) hours (80%)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("Warning threshold: \(warningHours) hours at 80 percent of goal")
-                }
-
-                if !tallyStore.recentClients.isEmpty {
-                    Section("Per-Client Goals") {
-                        ForEach(tallyStore.recentClients, id: \.self) { client in
-                            HStack {
-                                Text(client)
-                                Spacer()
-                                Stepper(
-                                    "\(Int(clientGoalHours[client] ?? 0))h",
-                                    value: Binding(
-                                        get: { clientGoalHours[client] ?? 0 },
-                                        set: { clientGoalHours[client] = $0 }
-                                    ),
-                                    in: 0...80,
-                                    step: 1
-                                )
-                                .fixedSize()
-                            }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(client) weekly goal: \(Int(clientGoalHours[client] ?? 0)) hours")
+                let allClients = Array(Set(tallyStore.recentClients + tallyStore.clientGoals.map { $0.client })).sorted()
+                if !allClients.isEmpty {
+                    Section {
+                        ForEach(allClients, id: \.self) { client in
+                            clientGoalRow(client: client)
                         }
-
-                        Text("Set to 0 to remove a client goal.")
+                        Text("Tap the number to type a value directly. Set to 0 to remove a goal.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    } header: {
+                        Text("Per-Client Goals")
                     }
                 }
 
+                Section {
+                    Toggle("Enable total weekly goal", isOn: $totalGoalEnabled)
+
+                    if totalGoalEnabled {
+                        HStack {
+                            Text("Hours per week")
+                            Spacer()
+                            hourField(value: $goalHours, range: 1...80)
+                        }
+
+                        Slider(value: $goalHours, in: 1...80, step: 1)
+                            .accessibilityLabel("Weekly goal slider")
+
+                        Text("You'll get a warning at \(warningHours) hours (80%)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Total Weekly Goal")
+                } footer: {
+                    Text(totalGoalEnabled ? "" : "Useful if you have a total hours target across all clients.")
+                }
+
                 Section("About Goals") {
-                    Text("Tally tracks your total hours across all clients each week. Your goal resets every Monday.")
+                    Text("Goals reset every Monday. Per-client goals show as progress bars on the home screen.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel("Your weekly goal resets every Monday and tracks total hours across all clients")
                 }
             }
-            .navigationTitle("Weekly Goal")
+            .navigationTitle("Goals")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
-                        .accessibilityLabel("Cancel")
-                        .accessibilityHint("Dismisses without saving changes")
+                        .foregroundStyle(.secondary)
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         Task {
-                            await tallyStore.saveGoal(goalHours)
+                            await tallyStore.saveGoal(totalGoalEnabled ? goalHours : 0)
                             for (client, hours) in clientGoalHours {
                                 await tallyStore.saveClientGoal(client: client, weeklyHours: hours)
                             }
                             dismiss()
                         }
                     }
-                    .accessibilityLabel("Save goal")
-                    .accessibilityHint("Saves \(Int(goalHours)) hours as your weekly goal")
+                    .fontWeight(.semibold)
                 }
             }
-            .onAppear {
-                goalHours = tallyStore.weeklyGoal
+            .task {
+                await tallyStore.loadConfig()
+                await tallyStore.loadSessions()
+                let saved = tallyStore.weeklyGoal
+                totalGoalEnabled = saved > 0
+                goalHours = saved > 0 ? saved : 40
                 for goal in tallyStore.clientGoals {
                     clientGoalHours[goal.client] = goal.weeklyHours
                 }
             }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private func clientGoalRow(client: String) -> some View {
+        HStack {
+            Text(client)
+            Spacer()
+            hourField(
+                value: Binding(
+                    get: { clientGoalHours[client] ?? 0 },
+                    set: { clientGoalHours[client] = $0 }
+                ),
+                range: 0...80
+            )
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(client) weekly goal: \(Int(clientGoalHours[client] ?? 0)) hours")
+    }
+
+    private func hourField(value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+        HStack(spacing: 2) {
+            Button {
+                value.wrappedValue = max(range.lowerBound, value.wrappedValue - 1)
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .foregroundStyle(value.wrappedValue > range.lowerBound ? Color.secondary : Color.secondary.opacity(0.3))
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+
+            TextField("0", value: value, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .frame(width: 46)
+                .padding(.vertical, 4)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+                .onChange(of: value.wrappedValue) { _, newVal in
+                    value.wrappedValue = min(range.upperBound, max(range.lowerBound, newVal))
+                }
+
+            Text("h")
+                .foregroundStyle(.secondary)
+                .frame(width: 14)
+
+            Button {
+                value.wrappedValue = min(range.upperBound, value.wrappedValue + 1)
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundStyle(.blue)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
         }
     }
 }

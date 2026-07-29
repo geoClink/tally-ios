@@ -36,15 +36,42 @@ struct AuthView: View {
     }
 
     var body: some View {
+        ZStack {
+            // Decorative background circles
+            GeometryReader { geo in
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.22))
+                        .frame(width: geo.size.width * 0.85)
+                        .blur(radius: 90)
+                        .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                    Circle()
+                        .fill(Color.indigo.opacity(0.16))
+                        .frame(width: geo.size.width * 0.7)
+                        .blur(radius: 75)
+                        .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.5)
+                }
+            }
+            .ignoresSafeArea()
+
         ScrollView {
             VStack(spacing: 0) {
                 // Brand header
                 VStack(spacing: 6) {
-                    Image(systemName: "timer")
-                        .font(.system(size: 52))
-                        .foregroundStyle(.blue)
-                        .padding(.bottom, 4)
-                        .accessibilityHidden(true)
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.12))
+                            .frame(width: 90, height: 90)
+                        Circle()
+                            .stroke(Color.blue.opacity(0.25), lineWidth: 1.5)
+                            .frame(width: 90, height: 90)
+                        Image(systemName: "timer")
+                            .font(.system(size: 38, weight: .light))
+                            .foregroundStyle(.blue)
+                    }
+                    .padding(.bottom, 4)
+                    .accessibilityHidden(true)
 
                     Text("Tally")
                         .font(.system(size: 34, weight: .bold))
@@ -183,7 +210,7 @@ struct AuthView: View {
                     } onCompletion: { result in
                         Task { await handleAppleSignIn(result) }
                     }
-                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                    .signInWithAppleButtonStyle(colorScheme == .dark ? .whiteOutline : .black)
                     .frame(width: 188, height: 44)
                     .cornerRadius(4)
                     .disabled(isLoading)
@@ -195,6 +222,7 @@ struct AuthView: View {
                 Spacer().frame(height: 48)
             }
         }
+        } // ZStack
     }
 
     private func handleGoogleSignIn() async {

@@ -34,13 +34,8 @@ struct ClientPickerView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Handle bar
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 36, height: 5)
-                .padding(.top, 8)
-
             Text("Who are you working for?")
+                .padding(.top, 8)
                 .font(.title3.bold())
                 .accessibilityAddTraits(.isHeader)
 

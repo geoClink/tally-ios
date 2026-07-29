@@ -23,13 +23,19 @@ enum AppGroupStore {
         weeklyHours: Double,
         weeklyGoal: Double,
         topClient: String,
-        recentClients: [String]
+        recentClients: [String],
+        isPro: Bool = false
     ) {
         defaults.set(todayHours,    forKey: AppGroupKey.todayHours)
         defaults.set(weeklyHours,   forKey: AppGroupKey.weeklyHours)
         defaults.set(weeklyGoal,    forKey: AppGroupKey.weeklyGoal)
         defaults.set(topClient,     forKey: AppGroupKey.topClientToday)
         defaults.set(recentClients, forKey: AppGroupKey.recentClients)
+        defaults.set(isPro,         forKey: "isPro")
+    }
+
+    static func readIsPro() -> Bool {
+        defaults.bool(forKey: "isPro")
     }
 
     // MARK: - Background timer state

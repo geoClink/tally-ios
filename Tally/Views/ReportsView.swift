@@ -21,9 +21,7 @@ struct ReportsView: View {
     @State private var showExportOptions = false
     @State private var showPaywall = false
     @State private var logAgainSession: SessionModel?
-    @State private var showLogAgain = false
     @State private var sessionToEdit: SessionModel?
-    @State private var showEditSession = false
     private let purchases = PurchaseManager.shared
     private let exportTip = ExportLockedTip()
     @Environment(\.colorScheme) private var colorScheme
@@ -63,6 +61,24 @@ struct ReportsView: View {
     
     var body: some View {
         NavigationStack {
+            ZStack {
+                GeometryReader { geo in
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.18))
+                            .frame(width: geo.size.width * 0.85)
+                            .blur(radius: 90)
+                            .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                        Circle()
+                            .fill(Color.indigo.opacity(0.12))
+                            .frame(width: geo.size.width * 0.7)
+                            .blur(radius: 75)
+                            .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
+                    }
+                }
+                .ignoresSafeArea()
+
             Group {
                 if isLoading {
                     ProgressView("Loading sessions...")
@@ -85,9 +101,11 @@ struct ReportsView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
-                        Section("This Week") {
-                            ProgressBarView(value: tallyStore.weeklyHours, goal: tallyStore.weeklyGoal)
-                                .padding(.vertical, 4)
+                        Section {
+                            if tallyStore.weeklyGoal > 0 {
+                                ProgressBarView(value: tallyStore.weeklyHours, goal: tallyStore.weeklyGoal)
+                                    .padding(.vertical, 4)
+                            }
 
                             if weeklyByClient.isEmpty {
                                 Text("No sessions this week")
@@ -95,19 +113,41 @@ struct ReportsView: View {
                             } else {
                                 ForEach(weeklyByClient, id: \.0) { client, hours in
                                     let rate = tallyStore.hourlyRate(for: client)
-                                    HStack {
+                                    let goal = tallyStore.clientGoals.first { $0.client == client }
+                                    let progress = goal.map { min(1.0, hours / $0.weeklyHours) }
+                                    HStack(alignment: .center, spacing: 10) {
+                                        if let progress {
+                                            ZStack {
+                                                Circle()
+                                                    .stroke(Color.primary.opacity(0.1), lineWidth: 3)
+                                                Circle()
+                                                    .trim(from: 0, to: progress)
+                                                    .stroke(
+                                                        progress >= 1.0 ? Color.green : Color.blue,
+                                                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                                    )
+                                                    .rotationEffect(.degrees(-90))
+                                                    .animation(.easeOut(duration: 0.4), value: progress)
+                                            }
+                                            .frame(width: 22, height: 22)
+                                        }
                                         Text(client)
+                                            .font(.subheadline.weight(.medium))
                                         Spacer()
-                                        VStack(alignment: .trailing, spacing: 2) {
+                                        VStack(alignment: .trailing, spacing: 1) {
                                             Text(TimeFormatter.shortFormat(hours))
-                                                .foregroundStyle(.secondary)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(.primary)
+                                                .monospacedDigit()
                                             if rate > 0 {
                                                 Text((hours * rate).formatted(.currency(code: "USD")))
                                                     .font(.caption)
-                                                    .foregroundStyle(captionColor)
+                                                    .foregroundStyle(.blue)
+                                                    .monospacedDigit()
                                             }
                                         }
                                     }
+                                    .padding(.vertical, 2)
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel(rate > 0
                                         ? "\(client): \(TimeFormatter.accessibleFormat(hours)) this week, \((hours * rate).formatted(.currency(code: "USD")))"
@@ -115,9 +155,14 @@ struct ReportsView: View {
                                     )
                                 }
                             }
+                        } header: {
+                            Text("This Week")
+                                .font(.caption.weight(.semibold))
+                                .tracking(0.5)
+                                .textCase(.uppercase)
                         }
                         
-                        Section("All Time") {
+                        Section {
                             if !topClientsForChart.isEmpty {
                                 GeometryReader { geo in
                                     let minBarWidth: CGFloat = 120
@@ -130,24 +175,17 @@ struct ReportsView: View {
                                             x: .value("Client", client),
                                             y: .value("Hours", hours)
                                         )
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(by: .value("Client", client))
+                                        .cornerRadius(6)
                                         .annotation(position: .top) {
                                             Text(TimeFormatter.shortFormat(hours))
-                                                .font(.caption2)
+                                                .font(.caption2.bold())
                                                 .foregroundStyle(captionColor)
                                         }
                                     }
-                                    .chartYAxis {
-                                        AxisMarks { value in
-                                            AxisValueLabel {
-                                                if let hours = value.as(Double.self) {
-                                                    Text(TimeFormatter.shortFormat(hours))
-                                                        .font(.caption2)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .frame(width: chartWidth, height: 200)
+                                    .chartYAxis(.hidden)
+                                    .chartLegend(.hidden)
+                                    .frame(width: chartWidth, height: 220)
                                     .padding(.vertical, 8)
                                     
                                     if needsScroll {
@@ -158,7 +196,7 @@ struct ReportsView: View {
                                         chartContent
                                     }
                                 }
-                                .frame(height: 216)
+                                .frame(height: 236)
                                 .accessibilityElement(children: .ignore)
                                 .accessibilityLabel("All-time hours by client. \(chartAccessibilityDescription)")
                             }
@@ -172,19 +210,24 @@ struct ReportsView: View {
                                     NavigationLink {
                                         ClientDetailView(client: client)
                                     } label: {
-                                        HStack {
+                                        HStack(alignment: .center) {
                                             Text(client)
+                                                .font(.subheadline.weight(.medium))
                                             Spacer()
-                                            VStack(alignment: .trailing, spacing: 2) {
+                                            VStack(alignment: .trailing, spacing: 1) {
                                                 Text(TimeFormatter.shortFormat(hours))
-                                                    .foregroundStyle(.secondary)
+                                                    .font(.subheadline.weight(.semibold))
+                                                    .foregroundStyle(.primary)
+                                                    .monospacedDigit()
                                                 if rate > 0 {
                                                     Text((hours * rate).formatted(.currency(code: "USD")))
                                                         .font(.caption)
-                                                        .foregroundStyle(captionColor)
+                                                        .foregroundStyle(.blue)
+                                                        .monospacedDigit()
                                                 }
                                             }
                                         }
+                                        .padding(.vertical, 2)
                                     }
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel(rate > 0
@@ -192,7 +235,7 @@ struct ReportsView: View {
                                         : "\(client): \(TimeFormatter.accessibleFormat(hours)) total. Double tap for details."
                                     )
                                 }
-                                
+
                                 if allTimeByClient.count > 20 {
                                     Button {
                                         showAllClients = true
@@ -204,14 +247,56 @@ struct ReportsView: View {
                                     .accessibilityLabel("See all \(allTimeByClient.count) clients")
                                 }
                             }
+                        } header: {
+                            Text("All Time")
+                                .font(.caption.weight(.semibold))
+                                .tracking(0.5)
+                                .textCase(.uppercase)
                         }
                         
-                        Section(purchases.hasFullHistory ? "Sessions" : "Sessions (last 7 days)") {
+                        Section {
+                            let billableHours = tallyStore.sessions.filter { $0.isBillable }.reduce(0) { $0 + $1.hours }
+                            let nonBillableHours = tallyStore.sessions.filter { !$0.isBillable }.reduce(0) { $0 + $1.hours }
+                            if billableHours > 0 || nonBillableHours > 0 {
+                                HStack(spacing: 12) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "dollarsign.circle.fill")
+                                            .foregroundStyle(.green)
+                                        Text("\(TimeFormatter.shortFormat(billableHours)) billable")
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.green)
+                                    if nonBillableHours > 0 {
+                                        Text("·")
+                                            .foregroundStyle(.secondary)
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "dollarsign.circle")
+                                            Text("\(TimeFormatter.shortFormat(nonBillableHours)) non-billable")
+                                        }
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                }
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("\(TimeFormatter.accessibleFormat(billableHours)) billable, \(TimeFormatter.accessibleFormat(nonBillableHours)) non-billable")
+                            }
+
                             ForEach(tallyStore.visibleSessions) { session in
                                 HStack(spacing: 10) {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(session.client)
-                                            .font(.subheadline)
+                                        HStack(spacing: 4) {
+                                            Text(session.client)
+                                                .font(.subheadline)
+                                            if !session.isBillable {
+                                                Text("non-billable")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                                    .padding(.horizontal, 5)
+                                                    .padding(.vertical, 1)
+                                                    .background(Color.secondary.opacity(0.12), in: Capsule())
+                                            }
+                                        }
                                         if let note = session.taskNote, !note.isEmpty {
                                             Text(note)
                                                 .font(.caption)
@@ -222,7 +307,6 @@ struct ReportsView: View {
                                     Spacer()
                                     Button {
                                         logAgainSession = session
-                                        showLogAgain = true
                                     } label: {
                                         Image(systemName: "arrow.clockwise")
                                             .font(.caption)
@@ -242,7 +326,6 @@ struct ReportsView: View {
                                 .swipeActions(edge: .leading) {
                                     Button {
                                         sessionToEdit = session
-                                        showEditSession = true
                                     } label: {
                                         Label("Edit", systemImage: "pencil")
                                     }
@@ -256,10 +339,18 @@ struct ReportsView: View {
                                     showDeleteConfirmation = true
                                 }
                             }
+                        } header: {
+                            Text(purchases.hasFullHistory ? "Sessions" : "Sessions (Last 7 Days)")
+                                .font(.caption.weight(.semibold))
+                                .tracking(0.5)
+                                .textCase(.uppercase)
                         }
+                        .listSectionSpacing(.compact)
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            } // ZStack
             .navigationTitle("Reports")
             .toolbar {
                 ToolbarItem(placement: .automatic) {
@@ -270,7 +361,7 @@ struct ReportsView: View {
                             showPaywall = true
                         }
                     } label: {
-                        Image(systemName: purchases.canExportCSV ? "square.and.arrow.up" : "lock.fill")
+                        Image(systemName: purchases.canExportCSV ? "square.and.arrow.up.circle" : "lock.circle")
                     }
                     .accessibilityLabel(purchases.canExportCSV ? "Export hours" : "Upgrade to export")
                     .popoverTip(exportTip)
@@ -285,9 +376,13 @@ struct ReportsView: View {
                     onExport: { range, client in
                         export(range: range, client: client)
                         showExportOptions = false
+                    },
+                    onExportDates: { startDate, endDate, client in
+                        exportCustom(from: startDate, to: endDate, client: client)
+                        showExportOptions = false
                     }
                 )
-                .presentationDetents([.medium])
+                .presentationDetents([.large])
             }
             .sheet(isPresented: $showShareSheet) {
                 if let url = exportURL {
@@ -295,18 +390,14 @@ struct ReportsView: View {
                 }
             }
             .sheet(isPresented: $showPaywall) { PaywallView() }
-            .sheet(isPresented: $showLogAgain) {
-                if let session = logAgainSession {
-                    ManualEntryView(
-                        prefillClient: session.client,
-                        prefillNote: session.taskNote ?? ""
-                    )
-                }
+            .sheet(item: $logAgainSession) { session in
+                ManualEntryView(
+                    prefillClient: session.client,
+                    prefillNote: session.taskNote ?? ""
+                )
             }
-            .sheet(isPresented: $showEditSession) {
-                if let session = sessionToEdit {
-                    ManualEntryView(existingSession: session)
-                }
+            .sheet(item: $sessionToEdit) { session in
+                ManualEntryView(existingSession: session)
             }
             .sheet(isPresented: $showAllClients) {
                 AllClientsView(clients: allTimeByClient)
@@ -328,6 +419,7 @@ struct ReportsView: View {
             }
             .task {
                 isLoading = true
+                await tallyStore.loadConfig()
                 await tallyStore.loadSessions()
                 isLoading = false
                 if purchases.canExportCSV {
@@ -341,6 +433,24 @@ struct ReportsView: View {
         let clientName = client?.replacingOccurrences(of: " ", with: "-") ?? "all"
         let filename = "tally-\(clientName)-\(range.rawValue.lowercased().replacingOccurrences(of: " ", with: "-")).csv"
         let csv = CSVExporter.generate(sessions: tallyStore.sessions, range: range, client: client)
+        let url = CSVExporter.save(csv: csv, filename: filename)
+        exportURL = url
+        #if canImport(AppKit)
+        showExportOptions = false
+        if let url {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
+        #else
+        showShareSheet = true
+        #endif
+    }
+
+    private func exportCustom(from startDate: Date, to endDate: Date, client: String?) {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        let clientName = client?.replacingOccurrences(of: " ", with: "-") ?? "all"
+        let filename = "tally-\(clientName)-\(fmt.string(from: startDate))-to-\(fmt.string(from: endDate)).csv"
+        let csv = CSVExporter.generate(sessions: tallyStore.sessions, from: startDate, to: endDate, client: client)
         let url = CSVExporter.save(csv: csv, filename: filename)
         exportURL = url
         #if canImport(AppKit)

@@ -10,7 +10,12 @@ import SwiftUI
 struct ExportOptionsView: View {
     let clients: [String]
     let onExport: (ExportRange, String?) -> Void
+    let onExportDates: (Date, Date, String?) -> Void
     @Environment(\.dismiss) private var dismiss
+
+    @State private var customStart: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var customEnd: Date = Date()
+    @State private var customClient: String = ""
 
     var body: some View {
         NavigationStack {
@@ -32,6 +37,33 @@ struct ExportOptionsView: View {
                         .accessibilityLabel("Export \(range.rawValue)")
                         .accessibilityHint("Downloads a CSV file")
                     }
+                }
+
+                Section("Custom date range") {
+                    DatePicker("From", selection: $customStart, in: ...customEnd, displayedComponents: .date)
+                    DatePicker("To", selection: $customEnd, in: customStart..., displayedComponents: .date)
+                    if !clients.isEmpty {
+                        Picker("Client (optional)", selection: $customClient) {
+                            Text("All clients").tag("")
+                            ForEach(clients, id: \.self) { client in
+                                Text(client).tag(client)
+                            }
+                        }
+                    }
+                    Button {
+                        onExportDates(customStart, customEnd, customClient.isEmpty ? nil : customClient)
+                    } label: {
+                        HStack {
+                            Text("Export Custom Range")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.down.doc")
+                                .foregroundStyle(.blue)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .accessibilityLabel("Export custom date range")
+                    .accessibilityHint("Downloads a CSV file for the selected date range")
                 }
 
                 Section("Export by client") {
@@ -66,5 +98,6 @@ struct ExportOptionsView: View {
                 }
             }
         }
+        .presentationBackground(Color(uiColor: .systemGroupedBackground))
     }
 }

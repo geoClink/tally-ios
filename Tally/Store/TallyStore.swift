@@ -69,7 +69,8 @@ class TallyStore {
                 .execute()
                 .value
             sessions = response
-            PhoneSessionManager.shared.sendClients(recentClients)
+            let isPro = PurchaseManager.shared.hasWatchAndWidgets
+            PhoneSessionManager.shared.sendClients(isPro ? recentClients : [], isPro: isPro)
             writeWidgetSummary()
             await drainPendingQueue()
         } catch {
@@ -109,7 +110,7 @@ class TallyStore {
         }
     }
     
-    func addSession(client: String, hours: Double, taskNote: String?, date: Date = Date(), isManual: Bool = false) async {
+    func addSession(client: String, hours: Double, taskNote: String?, date: Date = Date(), isManual: Bool = false, isBillable: Bool = true) async {
         guard let user = try? await supabase.auth.user() else {
             ErrorHandler.shared.handle("No user logged in")
             return
@@ -127,7 +128,8 @@ class TallyStore {
                 hours: hours,
                 date: dateString,
                 taskNote: taskNote,
-                isManual: isManual
+                isManual: isManual,
+                isBillable: isBillable
             )
             try await supabase
                 .from("sessions")
@@ -140,7 +142,7 @@ class TallyStore {
         }
     }
 
-    func updateSession(_ session: SessionModel, client: String, hours: Double, date: Date, taskNote: String?) async {
+    func updateSession(_ session: SessionModel, client: String, hours: Double, date: Date, taskNote: String?, isBillable: Bool = true) async {
         let dateString = ISO8601DateFormatter().string(from: date).prefix(10).description
         do {
             struct SessionUpdate: Encodable {
@@ -148,14 +150,16 @@ class TallyStore {
                 let hours: Double
                 let date: String
                 let taskNote: String?
+                let isBillable: Bool
                 enum CodingKeys: String, CodingKey {
                     case client, hours, date
                     case taskNote = "task_note"
+                    case isBillable = "is_billable"
                 }
             }
             try await supabase
                 .from("sessions")
-                .update(SessionUpdate(client: client, hours: hours, date: dateString, taskNote: taskNote))
+                .update(SessionUpdate(client: client, hours: hours, date: dateString, taskNote: taskNote, isBillable: isBillable))
                 .eq("id", value: session.id.uuidString)
                 .execute()
             await loadSessions()
@@ -172,13 +176,8 @@ class TallyStore {
                 .execute()
                 .value
             if let config = response.first {
-                let goals = config.clientGoals ?? []
-                clientGoals = goals
-                if !goals.isEmpty {
-                    weeklyGoal = goals.reduce(0) { $0 + $1.weeklyHours }
-                } else {
-                    weeklyGoal = config.weeklyGoal
-                }
+                clientGoals = config.clientGoals ?? []
+                weeklyGoal = config.weeklyGoal
             }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading config")
@@ -243,7 +242,8 @@ class TallyStore {
             weeklyHours: weeklyHours,
             weeklyGoal: weeklyGoal,
             topClient: topClient,
-            recentClients: recentClients
+            recentClients: recentClients,
+            isPro: PurchaseManager.shared.hasWatchAndWidgets
         )
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -394,14 +394,20 @@ class TallyStore {
     }
 
     func removeMember(_ member: WorkspaceMember) async {
+        workspaceMembers.removeAll { $0.id == member.id }
         do {
-            try await supabase
+            let deleted: [WorkspaceMember] = try await supabase
                 .from("workspace_members")
                 .delete()
-                .eq("id", value: member.id.uuidString)
+                .eq("id", value: member.id)
+                .select()
                 .execute()
-            await loadWorkspaceMembers()
+                .value
+            if deleted.isEmpty {
+                await loadWorkspaceMembers()
+            }
         } catch {
+            await loadWorkspaceMembers()
             ErrorHandler.shared.handle(error, context: "Removing member")
         }
     }
@@ -601,6 +607,7 @@ struct SessionModel: Codable, Identifiable {
     let date: String?
     let taskNote: String?
     let isManual: Bool
+    let isBillable: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -612,6 +619,7 @@ struct SessionModel: Codable, Identifiable {
         case date
         case taskNote = "task_note"
         case isManual = "is_manual"
+        case isBillable = "is_billable"
     }
 }
 
@@ -624,7 +632,8 @@ struct SessionInsert: Codable {
     let date: String
     let taskNote: String?
     let isManual: Bool
-    
+    let isBillable: Bool
+
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case client
@@ -634,6 +643,7 @@ struct SessionInsert: Codable {
         case date
         case taskNote = "task_note"
         case isManual = "is_manual"
+        case isBillable = "is_billable"
     }
 }
 

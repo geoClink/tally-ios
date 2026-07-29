@@ -48,13 +48,12 @@ struct SupportSheet: View {
                         .padding(.vertical, 20)
                     }
                 } else {
-                    Section {
-                        Text("Describe the problem you're experiencing and I'll look into it.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Section("Your message") {
+                    Section(header: Text("Describe the problem you're experiencing and I'll look into it.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .textCase(nil)
+                        .padding(.bottom, 4)
+                    ) {
                         TextEditor(text: $message)
                             .frame(minHeight: 120)
                     }

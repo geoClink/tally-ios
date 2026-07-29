@@ -16,6 +16,7 @@ struct ManualEntryView: View {
     @State private var selectedMinutes: Int
     @State private var selectedDate: Date
     @State private var taskNote: String
+    @State private var isBillable: Bool
 
     private static let minuteOptions = Array(stride(from: 0, through: 55, by: 5))
 
@@ -24,6 +25,7 @@ struct ManualEntryView: View {
         _client = State(initialValue: existingSession?.client ?? prefillClient)
         _taskNote = State(initialValue: existingSession?.taskNote ?? prefillNote)
         _selectedDate = State(initialValue: existingSession?.startTime ?? .now)
+        _isBillable = State(initialValue: existingSession?.isBillable ?? true)
         if let session = existingSession {
             let totalMins = Int((session.hours * 60).rounded())
             _selectedHours = State(initialValue: totalMins / 60)
@@ -106,6 +108,14 @@ struct ManualEntryView: View {
                         .accessibilityHint("Describe what you worked on during this session")
                 }
 
+                Section("Billing") {
+                    Toggle(isOn: $isBillable) {
+                        Label("Billable", systemImage: isBillable ? "dollarsign.circle.fill" : "dollarsign.circle")
+                    }
+                    .tint(.green)
+                    .accessibilityLabel(isBillable ? "Billable — toggle to mark as non-billable" : "Non-billable — toggle to mark as billable")
+                }
+
                 Section("Date") {
                     DatePicker(
                         "Date",
@@ -141,7 +151,8 @@ struct ManualEntryView: View {
                     client: client,
                     hours: computedHours,
                     date: selectedDate,
-                    taskNote: taskNote.isEmpty ? nil : taskNote
+                    taskNote: taskNote.isEmpty ? nil : taskNote,
+                    isBillable: isBillable
                 )
             } else {
                 await tallyStore.addSession(
@@ -149,7 +160,8 @@ struct ManualEntryView: View {
                     hours: computedHours,
                     taskNote: taskNote.isEmpty ? nil : taskNote,
                     date: selectedDate,
-                    isManual: true
+                    isManual: true,
+                    isBillable: isBillable
                 )
             }
             dismiss()

@@ -12,6 +12,7 @@ struct TeamView: View {
     @State private var newWorkspaceClient = ""
     @State private var newWorkspaceGoal: Double = 0
     @State private var showPaywall = false
+    @State private var selectedWorkspace: WorkspaceModel?
     private let purchases = PurchaseManager.shared
 
     private var subscriptionExpired: Bool {
@@ -20,13 +21,32 @@ struct TeamView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if !purchases.hasTeamWorkspaces {
-                    upsellView
-                } else if tallyStore.workspaces.isEmpty {
-                    emptyStateView
-                } else {
-                    workspaceList
+            ZStack {
+                GeometryReader { geo in
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.18))
+                            .frame(width: geo.size.width * 0.85)
+                            .blur(radius: 90)
+                            .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                        Circle()
+                            .fill(Color.indigo.opacity(0.13))
+                            .frame(width: geo.size.width * 0.7)
+                            .blur(radius: 75)
+                            .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
+                    }
+                }
+                .ignoresSafeArea()
+
+                Group {
+                    if !purchases.hasTeamWorkspaces {
+                        upsellView
+                    } else if tallyStore.workspaces.isEmpty {
+                        emptyStateView
+                    } else {
+                        workspaceList
+                    }
                 }
             }
             .navigationTitle("Team")
@@ -80,20 +100,27 @@ struct TeamView: View {
                     }
                     .padding(.vertical, 4)
                 }
-                .listRowBackground(Color.orange.opacity(0.08))
+                .listRowBackground(Color.orange.opacity(0.12))
             }
             ForEach(tallyStore.workspaces) { workspace in
-                NavigationLink {
-                    WorkspaceDetailView(workspace: workspace)
+                Button {
+                    selectedWorkspace = workspace
                 } label: {
                     WorkspaceCard(workspace: workspace)
                 }
+                .buttonStyle(.plain)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     if tallyStore.isOwner(of: workspace) {
                         DeleteWorkspaceButton(workspace: workspace)
                     }
                 }
             }
+        }
+        .scrollContentBackground(.hidden)
+        .navigationDestination(item: $selectedWorkspace) { workspace in
+            WorkspaceDetailView(workspace: workspace)
         }
     }
 
@@ -170,46 +197,50 @@ private struct WorkspaceCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(workspace.name)
-                .font(.headline)
-            Text(workspace.clientName)
-                .font(.caption)
-                .foregroundStyle(.blue)
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(memberCount) member\(memberCount == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundStyle(captionColor)
-                Spacer()
-                Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
-                    .font(.caption.bold())
-                    .foregroundStyle(.blue)
-                if workspace.weeklyGoal > 0 {
-                    Text("of \(TimeFormatter.shortFormat(workspace.weeklyGoal))")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(workspace.name)
+                        .font(.headline)
+                    Text(workspace.clientName)
                         .font(.caption)
-                        .foregroundStyle(captionColor)
-                } else {
-                    Text("this week")
+                        .foregroundStyle(.blue)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(TimeFormatter.shortFormat(tallyStore.teamTotalWeeklyHours(for: workspace)))
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.blue)
+                    Text("\(memberCount) member\(memberCount == 1 ? "" : "s")")
                         .font(.caption)
                         .foregroundStyle(captionColor)
                 }
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, 4)
             }
             if workspace.weeklyGoal > 0 {
                 let progress = min(tallyStore.teamTotalWeeklyHours(for: workspace) / workspace.weeklyGoal, 1.0)
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2).fill(Color.secondary.opacity(0.2)).frame(height: 4)
-                        RoundedRectangle(cornerRadius: 2).fill(progress >= 1 ? Color.green : Color.blue)
-                            .frame(width: geo.size.width * progress, height: 4)
+                VStack(alignment: .leading, spacing: 3) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.2)).frame(height: 5)
+                            RoundedRectangle(cornerRadius: 3).fill(progress >= 1 ? Color.green : Color.blue)
+                                .frame(width: geo.size.width * progress, height: 5)
+                        }
                     }
+                    .frame(height: 5)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(Int(progress * 100)) percent of weekly goal")
+                    Text("of \(TimeFormatter.shortFormat(workspace.weeklyGoal)) goal")
+                        .font(.caption2)
+                        .foregroundStyle(captionColor)
                 }
-                .frame(height: 4)
-                .padding(.top, 2)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(Int(progress * 100)) percent of weekly goal")
             }
         }
-        .padding(.vertical, 4)
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
         .task { await tallyStore.loadTeamSessions(for: workspace) }
     }
 }
@@ -265,6 +296,24 @@ struct WorkspaceDetailView: View {
     }
 
     var body: some View {
+        ZStack {
+            GeometryReader { geo in
+                ZStack {
+                    Circle()
+                        .fill(Color.blue.opacity(0.18))
+                        .frame(width: geo.size.width * 0.85)
+                        .blur(radius: 90)
+                        .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.08)
+
+                    Circle()
+                        .fill(Color.indigo.opacity(0.12))
+                        .frame(width: geo.size.width * 0.7)
+                        .blur(radius: 75)
+                        .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
+                }
+            }
+            .ignoresSafeArea()
+
         List {
             Section {
                 HStack {
@@ -371,6 +420,8 @@ struct WorkspaceDetailView: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        } // ZStack
         .navigationTitle(workspace.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

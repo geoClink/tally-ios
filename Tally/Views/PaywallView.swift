@@ -33,14 +33,40 @@ struct PaywallView: View {
 
     var body: some View {
         NavigationStack {
+            ZStack {
+                GeometryReader { geo in
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.20))
+                            .frame(width: geo.size.width * 0.85)
+                            .blur(radius: 90)
+                            .offset(x: geo.size.width * 0.35, y: -geo.size.height * 0.05)
+
+                        Circle()
+                            .fill(Color.purple.opacity(0.15))
+                            .frame(width: geo.size.width * 0.7)
+                            .blur(radius: 75)
+                            .offset(x: -geo.size.width * 0.3, y: geo.size.height * 0.55)
+                    }
+                }
+                .ignoresSafeArea()
+
             ScrollView {
                 VStack(spacing: 24) {
                     // Header
                     VStack(spacing: 8) {
-                        Image(systemName: "timer")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.blue)
-                            .accessibilityHidden(true)
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.12))
+                                .frame(width: 90, height: 90)
+                            Circle()
+                                .stroke(Color.blue.opacity(0.25), lineWidth: 1.5)
+                                .frame(width: 90, height: 90)
+                            Image(systemName: "timer")
+                                .font(.system(size: 38, weight: .light))
+                                .foregroundStyle(.blue)
+                        }
+                        .accessibilityHidden(true)
                         Text("Upgrade Tally")
                             .font(.title.bold())
                         Text("Unlock your full potential")
@@ -57,7 +83,7 @@ struct PaywallView: View {
                             price: "Current plan",
                             color: .gray,
                             features: [
-                                "1 client",
+                                "3 clients",
                                 "Basic timer",
                                 "7-day history"
                             ],
@@ -156,6 +182,7 @@ struct PaywallView: View {
                     .padding(.bottom)
                 }
             }
+            } // ZStack
             .navigationTitle("")
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
