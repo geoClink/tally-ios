@@ -45,6 +45,31 @@ class TallyStore {
             .filter { $0.startTime >= monday }
             .reduce(0) { $0 + $1.hours }
     }
+
+    var todayHours: Double {
+        let start = Calendar.current.startOfDay(for: Date())
+        return sessions
+            .filter { $0.startTime >= start }
+            .reduce(0) { $0 + $1.hours }
+    }
+
+    var dailyHoursThisWeek: [(String, Double)] {
+        let calendar = Calendar(identifier: .iso8601)
+        let now = Date()
+        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        var result: [(String, Double)] = []
+        for dayOffset in 0..<7 {
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: monday),
+                  day <= now else { break }
+            let start = calendar.startOfDay(for: day)
+            let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
+            let hours = sessions.filter { $0.startTime >= start && $0.startTime < end }.reduce(0) { $0 + $1.hours }
+            result.append((formatter.string(from: day), hours))
+        }
+        return result
+    }
     
     var recentClients: [String] {
         Array(Set(sessions.map { $0.client })).sorted()
@@ -72,6 +97,8 @@ class TallyStore {
             let isPro = PurchaseManager.shared.hasWatchAndWidgets
             PhoneSessionManager.shared.sendClients(isPro ? recentClients : [], isPro: isPro)
             writeWidgetSummary()
+            let summaryEnabled = UserDefaults.standard.bool(forKey: NotificationManager.weeklySummaryKey)
+            NotificationManager.shared.scheduleWeeklySummary(weeklyHours: weeklyHours, enabled: summaryEnabled)
             await drainPendingQueue()
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading sessions")
@@ -178,6 +205,7 @@ class TallyStore {
             if let config = response.first {
                 clientGoals = config.clientGoals ?? []
                 weeklyGoal = config.weeklyGoal
+                CurrencyPreference.save(config.currencyCode)
             }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading config")
@@ -188,7 +216,7 @@ class TallyStore {
         guard let user = try? await supabase.auth.user() else { return }
         weeklyGoal = goal
         do {
-            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: goal, clientGoals: clientGoals)
+            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: goal, clientGoals: clientGoals, currencyCode: CurrencyPreference.current)
             try await supabase
                 .from("config")
                 .upsert(config, onConflict: "user_id")
@@ -206,13 +234,27 @@ class TallyStore {
         }
         clientGoals = updated
         do {
-            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: weeklyGoal, clientGoals: clientGoals)
+            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: weeklyGoal, clientGoals: clientGoals, currencyCode: CurrencyPreference.current)
             try await supabase
                 .from("config")
                 .upsert(config, onConflict: "user_id")
                 .execute()
         } catch {
             ErrorHandler.shared.handle(error, context: "Saving client goal")
+        }
+    }
+
+    func saveCurrency(_ code: String) async {
+        guard let user = try? await supabase.auth.user() else { return }
+        CurrencyPreference.save(code)
+        do {
+            let config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: weeklyGoal, clientGoals: clientGoals, currencyCode: code)
+            try await supabase
+                .from("config")
+                .upsert(config, onConflict: "user_id")
+                .execute()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Saving currency")
         }
     }
 
@@ -651,11 +693,13 @@ struct ConfigModel: Codable {
     let id: UUID
     let weeklyGoal: Double
     let clientGoals: [ClientGoal]?
+    let currencyCode: String
 
     enum CodingKeys: String, CodingKey {
         case id
         case weeklyGoal = "weekly_goal"
         case clientGoals = "client_goals"
+        case currencyCode = "currency_code"
     }
 }
 
@@ -663,11 +707,13 @@ struct ConfigInsert: Codable {
     let userId: String
     let weeklyGoal: Double
     let clientGoals: [ClientGoal]?
+    let currencyCode: String
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case weeklyGoal = "weekly_goal"
         case clientGoals = "client_goals"
+        case currencyCode = "currency_code"
     }
 }
 

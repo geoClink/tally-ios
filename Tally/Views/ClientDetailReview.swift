@@ -84,7 +84,7 @@ struct ClientDetailView: View {
                     Spacer()
                     if hourlyRate > 0 {
                         VStack(alignment: .trailing, spacing: 4) {
-                            Text(totalAmount.formatted(.currency(code: "USD")))
+                            Text(totalAmount.formatted(.currency(code: CurrencyPreference.current)))
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .monospacedDigit()
                             Text("Total earnings")
@@ -97,7 +97,7 @@ struct ClientDetailView: View {
                 .padding(.vertical, 4)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hourlyRate > 0
-                    ? "\(TimeFormatter.accessibleFormat(totalHours)) total, \(totalAmount.formatted(.currency(code: "USD"))) earned"
+                    ? "\(TimeFormatter.accessibleFormat(totalHours)) total, \(totalAmount.formatted(.currency(code: CurrencyPreference.current))) earned"
                     : "\(TimeFormatter.accessibleFormat(totalHours)) total"
                 )
 
@@ -138,7 +138,7 @@ struct ClientDetailView: View {
                     HStack {
                         Label("Hourly Rate", systemImage: "dollarsign.circle")
                         Spacer()
-                        Text(hourlyRate > 0 ? hourlyRate.formatted(.currency(code: "USD")) : "Not set")
+                        Text(hourlyRate > 0 ? hourlyRate.formatted(.currency(code: CurrencyPreference.current)) : "Not set")
                             .foregroundStyle(.secondary)
                         Image(systemName: "chevron.right")
                             .font(.caption)
@@ -147,7 +147,7 @@ struct ClientDetailView: View {
                     }
                 }
                 .foregroundStyle(.primary)
-                .accessibilityLabel("Hourly rate: \(hourlyRate > 0 ? hourlyRate.formatted(.currency(code: "USD")) : "not set")")
+                .accessibilityLabel("Hourly rate: \(hourlyRate > 0 ? hourlyRate.formatted(.currency(code: CurrencyPreference.current)) : "not set")")
                 .accessibilityHint("Opens rate settings for \(client)")
                 
                 Button {
@@ -190,7 +190,7 @@ struct ClientDetailView: View {
                             if let note = session.taskNote, !note.isEmpty { parts.append(note) }
                             parts.append(TimeFormatter.accessibleFormat(session.hours))
                             if hourlyRate > 0 {
-                                parts.append((session.hours * hourlyRate).formatted(.currency(code: "USD")))
+                                parts.append((session.hours * hourlyRate).formatted(.currency(code: CurrencyPreference.current)))
                             }
                             return parts.joined(separator: ", ")
                         }()
@@ -209,7 +209,7 @@ struct ClientDetailView: View {
                                 Text(TimeFormatter.shortFormat(session.hours))
                                     .font(.subheadline)
                                 if hourlyRate > 0 {
-                                    Text((session.hours * hourlyRate).formatted(.currency(code: "USD")))
+                                    Text((session.hours * hourlyRate).formatted(.currency(code: CurrencyPreference.current)))
                                         .font(.caption)
                                         .foregroundStyle(captionColor)
                                 }

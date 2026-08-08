@@ -6,6 +6,12 @@
 import TipKit
 
 struct ExportLockedTip: Tip {
+    @Parameter static var isLocked: Bool = true
+
+    var rules: [Rule] {
+        #Rule(Self.$isLocked) { $0 == true }
+    }
+
     var title: Text { Text("CSV Export is a Pro feature") }
     var message: Text? {
         Text("Upgrade to Tally Pro to export your hours as a CSV for invoicing or tax prep.")

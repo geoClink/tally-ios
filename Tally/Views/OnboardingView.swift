@@ -99,9 +99,9 @@ private struct WelcomePage: View {
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "play.fill",      color: .green,  title: "One-tap tracking",   description: "Start a timer and pick a client in seconds.")
-                FeatureRow(icon: "chart.bar.fill", color: .blue,   title: "Weekly progress",    description: "See hours logged per client at a glance.")
-                FeatureRow(icon: "bell.fill",      color: .orange, title: "Goal notifications", description: "Get warned at 80% of your weekly target.")
+                FeatureRow(icon: "play.fill",               color: .green,  title: "One-tap timer",       description: "Pick a client and go. Stop when done — Tally handles the rest.")
+                FeatureRow(icon: "dollarsign.circle.fill",  color: .teal,   title: "Billable tracking",   description: "Mark hours billable or non-billable and see the split in reports.")
+                FeatureRow(icon: "target",                  color: .orange, title: "Per-client goals",    description: "Set weekly targets per client and watch progress in real time.")
             }
             .padding(.horizontal, 24)
 
@@ -134,7 +134,7 @@ private struct FeaturesPage: View {
                         colors: [.indigo, .purple],
                         startPoint: .leading, endPoint: .trailing
                     ))
-                Text("Everything you need to track, report, and invoice.")
+                Text("Track time, hit goals, and get paid — all in one place.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -142,10 +142,10 @@ private struct FeaturesPage: View {
             }
 
             VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "applewatch",      color: .indigo,  title: "Apple Watch",        description: "Start and stop timers from your wrist.")
-                FeatureRow(icon: "doc.text",        color: .teal,    title: "PDF invoices",       description: "Generate and share invoices in one tap.")
-                FeatureRow(icon: "square.grid.2x2", color: .purple,  title: "Home screen widget", description: "See your hours without opening the app.")
-                FeatureRow(icon: "mic.fill",        color: .red,     title: "Siri shortcuts",     description: "\"Start Tally timer\" — no unlock needed.")
+                FeatureRow(icon: "applewatch",      color: .indigo,  title: "Apple Watch + Live Activity", description: "Track from your wrist or see the timer live on your lock screen.")
+                FeatureRow(icon: "doc.text",        color: .teal,    title: "PDF invoices",                description: "Generate and send a professional invoice in one tap.")
+                FeatureRow(icon: "square.grid.2x2", color: .purple,  title: "Home screen widget",          description: "See today's hours without opening the app.")
+                FeatureRow(icon: "mic.fill",        color: .red,     title: "Siri shortcuts",              description: "\"Start Tally timer\" — hands-free, no unlock needed.")
             }
             .padding(.horizontal, 24)
 
@@ -346,7 +346,10 @@ struct FeatureRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.subheadline.weight(.semibold))
-                Text(description).font(.caption).foregroundStyle(.secondary)
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(14)

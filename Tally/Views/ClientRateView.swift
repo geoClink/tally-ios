@@ -31,7 +31,7 @@ struct ClientRateView: View {
                     }
 
                     if let rate = Double(rateText), rate > 0 {
-                        Text("At \(rate.formatted(.currency(code: "USD"))) per hour")
+                        Text("At \(rate.formatted(.currency(code: CurrencyPreference.current))) per hour")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

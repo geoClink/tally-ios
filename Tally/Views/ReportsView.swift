@@ -140,7 +140,7 @@ struct ReportsView: View {
                                                 .foregroundStyle(.primary)
                                                 .monospacedDigit()
                                             if rate > 0 {
-                                                Text((hours * rate).formatted(.currency(code: "USD")))
+                                                Text((hours * rate).formatted(.currency(code: CurrencyPreference.current)))
                                                     .font(.caption)
                                                     .foregroundStyle(.blue)
                                                     .monospacedDigit()
@@ -150,7 +150,7 @@ struct ReportsView: View {
                                     .padding(.vertical, 2)
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel(rate > 0
-                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) this week, \((hours * rate).formatted(.currency(code: "USD")))"
+                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) this week, \((hours * rate).formatted(.currency(code: CurrencyPreference.current)))"
                                         : "\(client): \(TimeFormatter.accessibleFormat(hours)) this week"
                                     )
                                 }
@@ -161,7 +161,7 @@ struct ReportsView: View {
                                 .tracking(0.5)
                                 .textCase(.uppercase)
                         }
-                        
+
                         Section {
                             if !topClientsForChart.isEmpty {
                                 GeometryReader { geo in
@@ -220,7 +220,7 @@ struct ReportsView: View {
                                                     .foregroundStyle(.primary)
                                                     .monospacedDigit()
                                                 if rate > 0 {
-                                                    Text((hours * rate).formatted(.currency(code: "USD")))
+                                                    Text((hours * rate).formatted(.currency(code: CurrencyPreference.current)))
                                                         .font(.caption)
                                                         .foregroundStyle(.blue)
                                                         .monospacedDigit()
@@ -231,7 +231,7 @@ struct ReportsView: View {
                                     }
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel(rate > 0
-                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) total, \((hours * rate).formatted(.currency(code: "USD"))). Double tap for details."
+                                        ? "\(client): \(TimeFormatter.accessibleFormat(hours)) total, \((hours * rate).formatted(.currency(code: CurrencyPreference.current))). Double tap for details."
                                         : "\(client): \(TimeFormatter.accessibleFormat(hours)) total. Double tap for details."
                                     )
                                 }
@@ -361,12 +361,14 @@ struct ReportsView: View {
                             showPaywall = true
                         }
                     } label: {
-                        Image(systemName: purchases.canExportCSV ? "square.and.arrow.up.circle" : "lock.circle")
+                        Image(systemName: purchases.canExportCSV ? "square.and.arrow.up" : "lock.fill")
+                            .font(.system(size: 16, weight: .medium))
                     }
+                    .buttonStyle(.plain)
                     .accessibilityLabel(purchases.canExportCSV ? "Export hours" : "Upgrade to export")
                     .popoverTip(exportTip)
                     .onChange(of: purchases.canExportCSV) { _, canExport in
-                        if canExport { exportTip.invalidate(reason: .actionPerformed) }
+                        ExportLockedTip.isLocked = !canExport
                     }
                 }
             }
@@ -419,12 +421,10 @@ struct ReportsView: View {
             }
             .task {
                 isLoading = true
+                ExportLockedTip.isLocked = !purchases.canExportCSV
                 await tallyStore.loadConfig()
                 await tallyStore.loadSessions()
                 isLoading = false
-                if purchases.canExportCSV {
-                    exportTip.invalidate(reason: .actionPerformed)
-                }
             }
         }
     }

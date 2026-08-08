@@ -83,7 +83,7 @@ struct InvoiceGeneratorView: View {
                         Text("Hourly rate")
                         Spacer()
                         if hourlyRate > 0 {
-                            Text(hourlyRate.formatted(.currency(code: "USD")))
+                            Text(hourlyRate.formatted(.currency(code: CurrencyPreference.current)))
                                 .foregroundStyle(.secondary)
                         } else {
                             Button("Set rate") {
@@ -112,7 +112,7 @@ struct InvoiceGeneratorView: View {
                     HStack {
                         Text("Total amount")
                         Spacer()
-                        Text(totalAmount.formatted(.currency(code: "USD")))
+                        Text(totalAmount.formatted(.currency(code: CurrencyPreference.current)))
                             .fontWeight(.semibold)
                             .foregroundStyle(totalAmount > 0 ? .primary : .secondary)
                     }

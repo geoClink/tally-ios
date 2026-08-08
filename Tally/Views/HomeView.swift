@@ -239,12 +239,20 @@ struct HomeView: View {
                             : Color.secondary.opacity(0.5)
                     )
 
-                if !viewModel.isRunning && tallyStore.weeklyHours > 0 {
-                    Text("\(TimeFormatter.shortFormat(tallyStore.weeklyHours)) this week")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary.opacity(0.6))
-                        .padding(.top, 2)
-                        .accessibilityLabel("\(TimeFormatter.accessibleFormat(tallyStore.weeklyHours)) tracked this week")
+                if !viewModel.isRunning {
+                    if tallyStore.todayHours > 0 {
+                        Text("\(TimeFormatter.shortFormat(tallyStore.todayHours)) today")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary.opacity(0.7))
+                            .padding(.top, 2)
+                            .accessibilityLabel("\(TimeFormatter.accessibleFormat(tallyStore.todayHours)) tracked today")
+                    }
+                    if tallyStore.weeklyHours > 0 {
+                        Text("\(TimeFormatter.shortFormat(tallyStore.weeklyHours)) this week")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary.opacity(0.4))
+                            .accessibilityLabel("\(TimeFormatter.accessibleFormat(tallyStore.weeklyHours)) tracked this week")
+                    }
                 }
             }
         }

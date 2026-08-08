@@ -15,6 +15,9 @@ struct AccountView: View {
     @State private var showSupportSheet = false
     @State private var roundingRule: RoundingRule = .current
     @State private var showRoundingInfo = false
+    @State private var currencyCode: String = CurrencyPreference.current
+    @AppStorage(NotificationManager.dailyReminderKey) private var dailyReminderEnabled = false
+    @AppStorage(NotificationManager.weeklySummaryKey) private var weeklySummaryEnabled = false
     private let purchases = PurchaseManager.shared
 
     var body: some View {
@@ -138,38 +141,121 @@ struct AccountView: View {
                         // Preferences section
                         VStack(spacing: 0) {
                             sectionHeader("Preferences")
-                            HStack(spacing: 14) {
-                                Button {
-                                    showRoundingInfo = true
-                                } label: {
+                            VStack(spacing: 0) {
+                                HStack(spacing: 14) {
+                                    Button {
+                                        showRoundingInfo = true
+                                    } label: {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.blue.opacity(0.15))
+                                                .frame(width: 34, height: 34)
+                                            Image(systemName: "clock.arrow.circlepath")
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundStyle(.blue)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Learn about time rounding")
+                                    Text("Time Rounding")
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Picker("Time Rounding", selection: $roundingRule) {
+                                        ForEach(RoundingRule.allCases, id: \.self) { rule in
+                                            Text(rule.label).tag(rule)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .tint(.secondary)
+                                    .onChange(of: roundingRule) { _, newRule in
+                                        RoundingRule.save(newRule)
+                                    }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+
+                                Divider().padding(.leading, 62)
+
+                                HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.blue.opacity(0.15))
+                                            .fill(Color.green.opacity(0.15))
                                             .frame(width: 34, height: 34)
-                                        Image(systemName: "clock.arrow.circlepath")
+                                        Image(systemName: "dollarsign.circle")
                                             .font(.system(size: 15, weight: .medium))
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(.green)
+                                    }
+                                    Text("Currency")
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Picker("Currency", selection: $currencyCode) {
+                                        ForEach(CurrencyPreference.supported, id: \.code) { item in
+                                            Text(item.code).tag(item.code)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .tint(.secondary)
+                                    .onChange(of: currencyCode) { _, newCode in
+                                        Task { await tallyStore.saveCurrency(newCode) }
                                     }
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Learn about time rounding")
-                                Text("Time Rounding")
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Picker("Time Rounding", selection: $roundingRule) {
-                                    ForEach(RoundingRule.allCases, id: \.self) { rule in
-                                        Text(rule.label).tag(rule)
-                                    }
-                                }
-                                .labelsHidden()
-                                .tint(.secondary)
-                                .onChange(of: roundingRule) { _, newRule in
-                                    RoundingRule.save(newRule)
-                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+
+                            VStack(spacing: 0) {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.purple.opacity(0.15))
+                                            .frame(width: 34, height: 34)
+                                        Image(systemName: "bell.fill")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundStyle(.purple)
+                                    }
+                                    Text("Daily Reminder")
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Toggle("", isOn: $dailyReminderEnabled)
+                                        .labelsHidden()
+                                        .onChange(of: dailyReminderEnabled) { _, enabled in
+                                            NotificationManager.shared.scheduleDailyReminder(enabled: enabled)
+                                        }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+
+                                Divider().padding(.leading, 62)
+
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.orange.opacity(0.15))
+                                            .frame(width: 34, height: 34)
+                                        Image(systemName: "calendar.badge.clock")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundStyle(.orange)
+                                    }
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text("Weekly Summary")
+                                            .foregroundStyle(.primary)
+                                        Text("Fridays at 6 pm")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Toggle("", isOn: $weeklySummaryEnabled)
+                                        .labelsHidden()
+                                        .onChange(of: weeklySummaryEnabled) { _, enabled in
+                                            NotificationManager.shared.scheduleWeeklySummary(weeklyHours: tallyStore.weeklyHours, enabled: enabled)
+                                        }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                            }
+                            .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+
                             .alert("Time Rounding", isPresented: $showRoundingInfo) {
                                 Button("Got it", role: .cancel) {}
                             } message: {
