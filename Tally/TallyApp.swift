@@ -45,7 +45,6 @@ struct TallyApp: App {
                     await tallyStore.loadConfig()
                 }
                 .onAppear {
-                    NotificationManager.shared.requestPermission()
                     PhoneSessionManager.shared.onSessionReceived = { client, hours in
                         guard PurchaseManager.shared.hasWatchAndWidgets else { return }
                         await tallyStore.addSession(client: client, hours: hours, taskNote: nil)

@@ -44,6 +44,9 @@ struct HomeView: View {
         }
     }
 
+    @AppStorage("trackingStreak") private var trackingStreak = 0
+    @AppStorage("lastTrackedDateInterval") private var lastTrackedDateInterval: Double = 0
+
     @State private var showClientPicker = false
     @State private var showManualEntry = false
     @State private var showGoalSetting = false
@@ -253,6 +256,13 @@ struct HomeView: View {
                             .foregroundStyle(.secondary.opacity(0.4))
                             .accessibilityLabel("\(TimeFormatter.accessibleFormat(tallyStore.weeklyHours)) tracked this week")
                     }
+                    if trackingStreak >= 2 {
+                        Text("\(trackingStreak)-day streak")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .padding(.top, 2)
+                            .accessibilityLabel("\(trackingStreak) day tracking streak")
+                    }
                 }
             }
         }
@@ -349,8 +359,29 @@ struct HomeView: View {
         let key = "completedSessionCount"
         let count = UserDefaults.standard.integer(forKey: key) + 1
         UserDefaults.standard.set(count, forKey: key)
+        if count == 1 {
+            NotificationManager.shared.requestPermission()
+            NotificationManager.shared.scheduleFirstReturnNudge(todayHours: tallyStore.todayHours)
+        }
         if count == 3 || (count > 3 && (count - 3) % 15 == 0) {
             requestReview()
         }
+        updateStreak()
+    }
+
+    private func updateStreak() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let lastDate = lastTrackedDateInterval > 0
+            ? Calendar.current.startOfDay(for: Date(timeIntervalSinceReferenceDate: lastTrackedDateInterval))
+            : nil
+
+        if let last = lastDate {
+            if last == today { return }
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+            trackingStreak = (last == yesterday) ? trackingStreak + 1 : 1
+        } else {
+            trackingStreak = 1
+        }
+        lastTrackedDateInterval = today.timeIntervalSinceReferenceDate
     }
 }

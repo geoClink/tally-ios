@@ -104,7 +104,7 @@ final class PurchaseManager {
     // MARK: - Feature Gates
 
     func canAddClient(existingCount: Int) -> Bool {
-        currentTier >= .pro || existingCount < 3
+        currentTier >= .pro || existingCount < 5
     }
 
     var canExportCSV: Bool        { currentTier >= .pro }

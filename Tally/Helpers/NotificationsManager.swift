@@ -81,6 +81,22 @@ class NotificationManager {
         center.add(request)
     }
 
+    // MARK: - First-return nudge (fires once, ~22 hrs after first session)
+
+    func scheduleFirstReturnNudge(todayHours: Double) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["first-return"])
+
+        let content = UNMutableNotificationContent()
+        content.title = "Nice start yesterday"
+        content.body = "You tracked \(TimeFormatter.shortFormat(todayHours)) — open Tally to keep going."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 22 * 3600, repeats: false)
+        let request = UNNotificationRequest(identifier: "first-return", content: content, trigger: trigger)
+        center.add(request)
+    }
+
     // MARK: - Private
 
     private func sendImmediate(title: String, body: String, identifier: String) {
