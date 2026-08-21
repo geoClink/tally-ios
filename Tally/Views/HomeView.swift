@@ -9,6 +9,7 @@ import SwiftUI
 import Supabase
 import AppIntents
 import StoreKit
+import AudioToolbox
 
 struct HomeView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -46,6 +47,10 @@ struct HomeView: View {
 
     @AppStorage("trackingStreak") private var trackingStreak = 0
     @AppStorage("lastTrackedDateInterval") private var lastTrackedDateInterval: Double = 0
+
+    @State private var ringPulse = false
+    @State private var showSavedFlash = false
+    @State private var goalReachedFlash = false
 
     @State private var showClientPicker = false
     @State private var showManualEntry = false
@@ -93,6 +98,7 @@ struct HomeView: View {
                     controls
                         .padding(.horizontal)
                         .padding(.bottom, 36)
+                        .animation(.spring(duration: 0.3), value: viewModel.isRunning)
                 }
             }
             .navigationTitle("Tally")
@@ -114,6 +120,18 @@ struct HomeView: View {
             .task {
                 await applyFocusFilter()
                 checkPendingIntents()
+            }
+            .onChange(of: viewModel.isRunning) { _, isRunning in
+                ringPulse = isRunning && !viewModel.isPaused
+            }
+            .onChange(of: viewModel.isPaused) { _, isPaused in
+                ringPulse = viewModel.isRunning && !isPaused
+            }
+            .onChange(of: tallyStore.weeklyHours) { oldHours, newHours in
+                guard tallyStore.weeklyGoal > 0,
+                      oldHours < tallyStore.weeklyGoal,
+                      newHours >= tallyStore.weeklyGoal else { return }
+                triggerGoalFlash()
             }
             .sheet(isPresented: $showClientPicker) {
                 ClientPickerView(
@@ -142,6 +160,10 @@ struct HomeView: View {
                             pendingBillable = true
                             showTaskNote = false
                             maybeRequestReview()
+                            try? await Task.sleep(for: .seconds(0.5))
+                            withAnimation(.spring(duration: 0.3)) { showSavedFlash = true }
+                            try? await Task.sleep(for: .seconds(1.2))
+                            withAnimation(.easeOut(duration: 0.4)) { showSavedFlash = false }
                         }
                     },
                     onSave: {
@@ -151,6 +173,10 @@ struct HomeView: View {
                             pendingBillable = true
                             showTaskNote = false
                             maybeRequestReview()
+                            try? await Task.sleep(for: .seconds(0.5))
+                            withAnimation(.spring(duration: 0.3)) { showSavedFlash = true }
+                            try? await Task.sleep(for: .seconds(1.2))
+                            withAnimation(.easeOut(duration: 0.4)) { showSavedFlash = false }
                         }
                     }
                 )
@@ -199,6 +225,15 @@ struct HomeView: View {
             Circle()
                 .stroke(Color.primary.opacity(0.07), lineWidth: 10)
 
+            // Breathing glow when timer is running
+            if viewModel.isRunning && !viewModel.isPaused {
+                Circle()
+                    .stroke(Color.blue.opacity(0.12), lineWidth: 18)
+                    .blur(radius: 10)
+                    .scaleEffect(ringPulse ? 1.05 : 0.97)
+                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: ringPulse)
+            }
+
             // Progress arc
             Circle()
                 .trim(from: 0, to: progress)
@@ -212,6 +247,14 @@ struct HomeView: View {
                 )
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut(duration: 0.6), value: progress)
+
+            // Goal reached flash — green overlay fades in then out
+            Circle()
+                .trim(from: 0, to: 1.0)
+                .stroke(Color.green.opacity(goalReachedFlash ? 0.55 : 0), lineWidth: 10)
+                .scaleEffect(goalReachedFlash ? 1.06 : 1.0)
+                .rotationEffect(.degrees(-90))
+                .animation(.spring(duration: 0.4), value: goalReachedFlash)
 
             // Timer content
             VStack(spacing: 6) {
@@ -265,6 +308,20 @@ struct HomeView: View {
                     }
                 }
             }
+            .opacity(showSavedFlash ? 0 : 1)
+            .animation(.easeOut(duration: 0.2), value: showSavedFlash)
+            // Session saved flash
+            if showSavedFlash {
+                VStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 44, weight: .light))
+                        .foregroundStyle(Color.green)
+                    Text("Saved")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.green)
+                }
+                .transition(.scale(scale: 0.7).combined(with: .opacity))
+            }
         }
         .frame(width: 260, height: 260)
     }
@@ -275,7 +332,8 @@ struct HomeView: View {
             VStack(spacing: 10) {
                 Button {
                     #if os(iOS)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    AudioServicesPlaySystemSound(1113)
                     #endif
                     showClientPicker = true
                 } label: {
@@ -298,9 +356,14 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
             }
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
         } else {
             HStack(spacing: 16) {
                 Button {
+                    #if os(iOS)
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    AudioServicesPlaySystemSound(1057)
+                    #endif
                     viewModel.isPaused ? viewModel.resume() : viewModel.pause()
                 } label: {
                     Label(viewModel.isPaused ? "Resume" : "Pause",
@@ -319,6 +382,7 @@ struct HomeView: View {
                 Button {
                     #if os(iOS)
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    AudioServicesPlaySystemSound(1114)
                     #endif
                     pendingHours = viewModel.stop()
                     showTaskNote = true
@@ -333,6 +397,7 @@ struct HomeView: View {
                 .accessibilityLabel("Stop timer")
                 .accessibilityHint("Stops and saves the current session for \(viewModel.activeClient)")
             }
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
         }
     }
 
@@ -367,6 +432,14 @@ struct HomeView: View {
             requestReview()
         }
         updateStreak()
+    }
+
+    private func triggerGoalFlash() {
+        withAnimation(.spring(duration: 0.4)) { goalReachedFlash = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2.0))
+            withAnimation(.easeOut(duration: 0.6)) { goalReachedFlash = false }
+        }
     }
 
     private func updateStreak() {

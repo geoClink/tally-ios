@@ -22,6 +22,7 @@ struct ReportsView: View {
     @State private var showPaywall = false
     @State private var logAgainSession: SessionModel?
     @State private var sessionToEdit: SessionModel?
+    @State private var chartAnimated = false
     private let purchases = PurchaseManager.shared
     private let exportTip = ExportLockedTip()
     @Environment(\.colorScheme) private var colorScheme
@@ -146,6 +147,7 @@ struct ReportsView: View {
                                                     .monospacedDigit()
                                             }
                                         }
+                                        .fixedSize(horizontal: true, vertical: false)
                                     }
                                     .padding(.vertical, 2)
                                     .accessibilityElement(children: .ignore)
@@ -173,7 +175,7 @@ struct ReportsView: View {
                                     let chartContent = Chart(topClientsForChart, id: \.0) { client, hours in
                                         BarMark(
                                             x: .value("Client", client),
-                                            y: .value("Hours", hours)
+                                            y: .value("Hours", chartAnimated ? hours : 0)
                                         )
                                         .foregroundStyle(by: .value("Client", client))
                                         .cornerRadius(6)
@@ -181,10 +183,12 @@ struct ReportsView: View {
                                             Text(TimeFormatter.shortFormat(hours))
                                                 .font(.caption2.bold())
                                                 .foregroundStyle(captionColor)
+                                                .opacity(chartAnimated ? 1 : 0)
                                         }
                                     }
                                     .chartYAxis(.hidden)
                                     .chartLegend(.hidden)
+                                    .animation(.easeOut(duration: 0.7), value: chartAnimated)
                                     .frame(width: chartWidth, height: 220)
                                     .padding(.vertical, 8)
                                     
@@ -197,6 +201,11 @@ struct ReportsView: View {
                                     }
                                 }
                                 .frame(height: 236)
+                                .task {
+                                    chartAnimated = false
+                                    try? await Task.sleep(for: .seconds(0.15))
+                                    withAnimation(.easeOut(duration: 0.7)) { chartAnimated = true }
+                                }
                                 .accessibilityElement(children: .ignore)
                                 .accessibilityLabel("All-time hours by client. \(chartAccessibilityDescription)")
                             }
@@ -226,6 +235,7 @@ struct ReportsView: View {
                                                         .monospacedDigit()
                                                 }
                                             }
+                                            .fixedSize(horizontal: true, vertical: false)
                                         }
                                         .padding(.vertical, 2)
                                     }
@@ -331,12 +341,13 @@ struct ReportsView: View {
                                     }
                                     .tint(.orange)
                                 }
-                            }
-                            .onDelete { indexSet in
-                                if let index = indexSet.first {
-                                    let visible = tallyStore.visibleSessions
-                                    sessionToDelete = visible[visible.index(visible.startIndex, offsetBy: index)]
-                                    showDeleteConfirmation = true
+                                .swipeActions(edge: .trailing) {
+                                    Button(role: .destructive) {
+                                        sessionToDelete = session
+                                        showDeleteConfirmation = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
                                 }
                             }
                         } header: {
@@ -407,9 +418,8 @@ struct ReportsView: View {
             .alert("Delete Session?", isPresented: $showDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
                     Task {
-                        if let session = sessionToDelete,
-                           let index = tallyStore.sessions.firstIndex(where: { $0.id == session.id }) {
-                            await tallyStore.deleteSessions(at: IndexSet([index]))
+                        if let session = sessionToDelete {
+                            await tallyStore.deleteSession(session)
                         }
                     }
                 }

@@ -315,6 +315,21 @@ class TallyStore {
         }
     }
 
+    func deleteSession(_ session: SessionModel) async {
+        sessions.removeAll { $0.id == session.id }
+        writeWidgetSummary()
+        do {
+            try await supabase
+                .from("sessions")
+                .delete()
+                .eq("id", value: session.id.uuidString)
+                .execute()
+        } catch {
+            await loadSessions()
+            ErrorHandler.shared.handle(error, context: "Deleting session")
+        }
+    }
+
     // MARK: - Workspaces
 
     var workspaces: [WorkspaceModel] = []

@@ -14,11 +14,11 @@ enum RoundingRule: Int, CaseIterable {
 
     var label: String {
         switch self {
-        case .none:       return "No rounding"
-        case .sixMin:     return "6 minutes"
-        case .fifteenMin: return "15 minutes"
-        case .thirtyMin:  return "30 minutes"
-        case .oneHour:    return "1 hour"
+        case .none:       return "Off"
+        case .sixMin:     return "6 min"
+        case .fifteenMin: return "15 min"
+        case .thirtyMin:  return "30 min"
+        case .oneHour:    return "1 hr"
         }
     }
 

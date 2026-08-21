@@ -159,6 +159,7 @@ struct AccountView: View {
                                     .accessibilityLabel("Learn about time rounding")
                                     Text("Time Rounding")
                                         .foregroundStyle(.primary)
+                                        .lineLimit(1)
                                     Spacer()
                                     Picker("Time Rounding", selection: $roundingRule) {
                                         ForEach(RoundingRule.allCases, id: \.self) { rule in
