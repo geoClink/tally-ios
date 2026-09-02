@@ -12,12 +12,14 @@ struct ClientRate: Codable, Identifiable {
     let client: String
     var hourlyRate: Double
     var budgetHours: Double?
+    var billingStartDay: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
         case client
         case hourlyRate = "hourly_rate"
         case budgetHours = "budget_hours"
+        case billingStartDay = "billing_start_day"
     }
 }
 
@@ -26,11 +28,13 @@ struct ClientRateInsert: Codable {
     let client: String
     let hourlyRate: Double
     let budgetHours: Double?
+    let billingStartDay: Int?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case client
         case hourlyRate = "hourly_rate"
         case budgetHours = "budget_hours"
+        case billingStartDay = "billing_start_day"
     }
 }

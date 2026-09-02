@@ -143,6 +143,7 @@ struct TaskNoteSheet: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .onAppear { isFocused = true }
+        .onAppear { }
+        .interactiveDismissDisabled(true)
     }
 }

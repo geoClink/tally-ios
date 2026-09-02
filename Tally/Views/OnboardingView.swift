@@ -185,7 +185,7 @@ private struct PlansPage: View {
             }
 
             VStack(spacing: 12) {
-                PlanRow(name: "Free",           price: "Always free",    highlight: false, features: "3 clients · 7-day history · basic timer")
+                PlanRow(name: "Free",           price: "Always free",    highlight: false, features: "5 clients · 7-day history · basic timer")
                 PlanRow(name: "Tally Pro",      price: "$9.99 one-time", highlight: true,  features: "Unlimited clients · CSV export · Watch · Widgets · Siri")
                 PlanRow(name: "Tally Business", price: "$4.99/month",    highlight: false, features: "Everything in Pro · Stripe invoicing · Team workspaces")
             }

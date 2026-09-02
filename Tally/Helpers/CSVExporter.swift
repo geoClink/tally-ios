@@ -9,7 +9,10 @@ import Foundation
 
 enum ExportRange: String, CaseIterable {
     case thisWeek = "This Week"
+    case lastWeek = "Last Week"
     case thisMonth = "This Month"
+    case lastMonth = "Last Month"
+    case lastBillingPeriod = "Last Billing Period"
     case allTime = "All Time"
 }
 
@@ -46,7 +49,27 @@ struct CSVExporter {
 
     static func filter(sessions: [SessionModel], range: ExportRange) -> [SessionModel] {
         guard let start = startDate(for: range) else { return sessions }
-        return sessions.filter { $0.startTime >= start }
+        var filtered = sessions.filter { $0.startTime >= start }
+        if let end = endDate(for: range) {
+            let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: end)) ?? end
+            filtered = filtered.filter { $0.startTime < endOfDay }
+        }
+        return filtered
+    }
+
+    static func endDate(for range: ExportRange, now: Date = Date()) -> Date? {
+        let calendar = Calendar.current
+        switch range {
+        case .lastWeek:
+            let thisWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+            return calendar.date(byAdding: .day, value: -1, to: thisWeekStart)
+        case .lastMonth:
+            let components = calendar.dateComponents([.year, .month], from: now)
+            let thisMonthStart = calendar.date(from: components) ?? now
+            return calendar.date(byAdding: .day, value: -1, to: thisMonthStart)
+        default:
+            return nil
+        }
     }
 
     static func save(csv: String, filename: String) -> URL? {
@@ -62,8 +85,17 @@ struct CSVExporter {
         switch range {
         case .thisWeek:
             return calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        case .lastWeek:
+            let thisWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+            return calendar.date(byAdding: .weekOfYear, value: -1, to: thisWeekStart)
         case .thisMonth:
             return calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+        case .lastMonth:
+            let components = calendar.dateComponents([.year, .month], from: now)
+            let thisMonthStart = calendar.date(from: components) ?? now
+            return calendar.date(byAdding: .month, value: -1, to: thisMonthStart)
+        case .lastBillingPeriod:
+            return nil
         case .allTime:
             return nil
         }

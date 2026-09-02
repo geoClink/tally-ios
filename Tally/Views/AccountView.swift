@@ -16,6 +16,8 @@ struct AccountView: View {
     @State private var roundingRule: RoundingRule = .current
     @State private var showRoundingInfo = false
     @State private var currencyCode: String = CurrencyPreference.current
+    @State private var weekStartDay: WeekStartDay = WeekStartDay.current
+    @State private var showContactEmailSheet = false
     @AppStorage(NotificationManager.dailyReminderKey) private var dailyReminderEnabled = false
     @AppStorage(NotificationManager.weeklySummaryKey) private var weeklySummaryEnabled = false
     private let purchases = PurchaseManager.shared
@@ -202,6 +204,64 @@ struct AccountView: View {
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
+
+                                Divider().padding(.leading, 62)
+
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.indigo.opacity(0.15))
+                                            .frame(width: 34, height: 34)
+                                        Image(systemName: "calendar")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundStyle(.indigo)
+                                    }
+                                    Text("Week Starts On")
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    Picker("Week Starts On", selection: $weekStartDay) {
+                                        ForEach(WeekStartDay.allCases, id: \.self) { day in
+                                            Text(day.label).tag(day)
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .tint(.secondary)
+                                    .onChange(of: weekStartDay) { _, newDay in
+                                        WeekStartDay.save(newDay)
+                                        tallyStore.weekStartDay = newDay
+                                    }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+
+                                Divider().padding(.leading, 62)
+
+                                Button { showContactEmailSheet = true } label: {
+                                    HStack(spacing: 14) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.blue.opacity(0.15))
+                                                .frame(width: 34, height: 34)
+                                            Image(systemName: "envelope.fill")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(.blue)
+                                        }
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text("Contact Email")
+                                                .foregroundStyle(.primary)
+                                            Text(tallyStore.contactEmail.flatMap { $0 == "dismissed" ? nil : $0 } ?? "Not set")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 12)
+                                }
+                                .buttonStyle(.plain)
                             }
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
 
@@ -256,6 +316,7 @@ struct AccountView: View {
                                 .padding(.vertical, 12)
                             }
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+                            .padding(.top, 12)
 
                             .alert("Time Rounding", isPresented: $showRoundingInfo) {
                                 Button("Got it", role: .cancel) {}
@@ -267,10 +328,19 @@ struct AccountView: View {
                         // Support section
                         VStack(spacing: 0) {
                             sectionHeader("Support")
-                            Button { showSupportSheet = true } label: {
-                                accountRow(icon: "exclamationmark.bubble", iconColor: .blue, label: "Report a Problem", trailing: nil, isAction: true)
+                            VStack(spacing: 0) {
+                                if let reviewURL = URL(string: "itms-apps://itunes.apple.com/app/id6775275483?action=write-review") {
+                                    Link(destination: reviewURL) {
+                                        accountRow(icon: "star.fill", iconColor: .yellow, label: "Rate Tally", trailing: nil, isAction: true)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Divider().padding(.leading, 52)
+                                }
+                                Button { showSupportSheet = true } label: {
+                                    accountRow(icon: "exclamationmark.bubble", iconColor: .blue, label: "Report a Problem", trailing: nil, isAction: true)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
                         }
 
@@ -320,6 +390,12 @@ struct AccountView: View {
             .task { await loadEmail() }
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(isPresented: $showSupportSheet) { SupportSheet(userEmail: userEmail) }
+            .sheet(isPresented: $showContactEmailSheet) {
+                ContactEmailSheet(
+                    current: tallyStore.contactEmail.flatMap { $0 == "dismissed" ? nil : $0 } ?? "",
+                    onSave: { email in Task { await tallyStore.saveContactEmail(email) } }
+                )
+            }
             .alert("Delete Account", isPresented: $showDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
                     Task {

@@ -30,9 +30,30 @@ struct InvoiceGeneratorView: View {
     @State private var stripeError: String?
     private let purchases = PurchaseManager.shared
     
+    private var billingRange: (start: Date, end: Date)? {
+        guard selectedRange == .lastBillingPeriod,
+              let startDay = tallyStore.billingStartDay(for: client) else { return nil }
+        let cal = Calendar.current
+        let now = Date()
+        var comps = cal.dateComponents([.year, .month], from: now)
+        comps.day = startDay
+        let currentStart = cal.date(from: comps) ?? now
+        let adjustedCurrentStart = currentStart > now
+            ? cal.date(byAdding: .month, value: -1, to: currentStart) ?? currentStart
+            : currentStart
+        let lastStart = cal.date(byAdding: .month, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
+        let lastEnd = cal.date(byAdding: .day, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
+        return (lastStart, lastEnd)
+    }
+
     private var filteredSessions: [SessionModel] {
-        CSVExporter.filter(sessions: tallyStore.sessions, range: selectedRange)
-            .filter { $0.client == client }
+        let base = tallyStore.sessions.filter { $0.client == client }
+        if selectedRange == .lastBillingPeriod {
+            guard let range = billingRange else { return [] }
+            let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: range.end)) ?? range.end
+            return base.filter { $0.startTime >= range.start && $0.startTime < endOfDay }
+        }
+        return CSVExporter.filter(sessions: base, range: selectedRange)
     }
     
     private var totalHours: Double {

@@ -89,6 +89,7 @@ struct AuthView: View {
                         #if os(iOS)
                         .autocapitalization(.none)
                         .keyboardType(.emailAddress)
+                        .autocorrectionDisabled()
                         #endif
                         .textContentType(.emailAddress)
                         .accessibilityLabel("Email address")

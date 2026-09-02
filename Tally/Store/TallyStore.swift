@@ -33,16 +33,18 @@ class TallyStore {
     var clientRates: [ClientRate] = []
     var clientGoals: [ClientGoal] = []
     var weeklyGoal: Double = 40.0
+    var weekStartDay: WeekStartDay = WeekStartDay.current
+    var contactEmail: String? = nil
     var isLoading = false
     var currentUserId: String?
     var currentUserEmail: String?
     
     var weeklyHours: Double {
-        let calendar = Calendar(identifier: .iso8601)
+        let calendar = weekStartDay.calendar
         let now = Date()
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         return sessions
-            .filter { $0.startTime >= monday }
+            .filter { $0.startTime >= weekStart }
             .reduce(0) { $0 + $1.hours }
     }
 
@@ -54,14 +56,14 @@ class TallyStore {
     }
 
     var dailyHoursThisWeek: [(String, Double)] {
-        let calendar = Calendar(identifier: .iso8601)
+        let calendar = weekStartDay.calendar
         let now = Date()
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE"
         var result: [(String, Double)] = []
         for dayOffset in 0..<7 {
-            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: monday),
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: weekStart),
                   day <= now else { break }
             let start = calendar.startOfDay(for: day)
             let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
@@ -81,6 +83,30 @@ class TallyStore {
 
     func budgetHours(for client: String) -> Double? {
         clientRates.first { $0.client == client }?.budgetHours
+    }
+
+    func billingStartDay(for client: String) -> Int? {
+        clientRates.first { $0.client == client }?.billingStartDay
+    }
+
+    func billingPeriodStart(startDay: Int) -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let currentDay = calendar.component(.day, from: now)
+        var components = calendar.dateComponents([.year, .month], from: now)
+        components.day = startDay
+        if currentDay < startDay {
+            components.month = (components.month ?? 1) - 1
+        }
+        return calendar.date(from: components) ?? now
+    }
+
+    func billingPeriodHours(client: String) -> Double {
+        guard let startDay = billingStartDay(for: client) else { return 0 }
+        let start = billingPeriodStart(startDay: startDay)
+        return sessions
+            .filter { $0.client == client && $0.startTime >= start }
+            .reduce(0) { $0 + $1.hours }
     }
     
     func loadSessions() async {
@@ -118,14 +144,15 @@ class TallyStore {
         }
     }
     
-    func saveClientRate(client: String, hourlyRate: Double, budgetHours: Double? = nil) async {
+    func saveClientRate(client: String, hourlyRate: Double, budgetHours: Double? = nil, billingStartDay: Int? = nil) async {
         guard let user = try? await supabase.auth.user() else { return }
         do {
             let rate = ClientRateInsert(
                 userId: user.id.uuidString,
                 client: client,
                 hourlyRate: hourlyRate,
-                budgetHours: budgetHours
+                budgetHours: budgetHours,
+                billingStartDay: billingStartDay
             )
             try await supabase
                 .from("client_rates")
@@ -206,6 +233,7 @@ class TallyStore {
                 clientGoals = config.clientGoals ?? []
                 weeklyGoal = config.weeklyGoal
                 CurrencyPreference.save(config.currencyCode)
+                contactEmail = config.contactEmail
             }
         } catch {
             ErrorHandler.shared.handle(error, context: "Loading config")
@@ -244,6 +272,21 @@ class TallyStore {
         }
     }
 
+    func saveContactEmail(_ email: String) async {
+        guard let user = try? await supabase.auth.user() else { return }
+        contactEmail = email
+        do {
+            var config = ConfigInsert(userId: user.id.uuidString, weeklyGoal: weeklyGoal, clientGoals: clientGoals, currencyCode: CurrencyPreference.current)
+            config.contactEmail = email
+            try await supabase
+                .from("config")
+                .upsert(config, onConflict: "user_id")
+                .execute()
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Saving contact email")
+        }
+    }
+
     func saveCurrency(_ code: String) async {
         guard let user = try? await supabase.auth.user() else { return }
         CurrencyPreference.save(code)
@@ -259,11 +302,11 @@ class TallyStore {
     }
 
     func weeklyHours(for client: String) -> Double {
-        let calendar = Calendar.current
+        let calendar = weekStartDay.calendar
         let now = Date()
-        let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
         return sessions
-            .filter { $0.client == client && $0.startTime >= monday }
+            .filter { $0.client == client && $0.startTime >= weekStart }
             .reduce(0) { $0 + $1.hours }
     }
 
@@ -483,9 +526,9 @@ class TallyStore {
     }
 
     func loadTeamSessions(for workspace: WorkspaceModel) async {
-        let isoCalendar = Calendar(identifier: .iso8601)
-        let monday = isoCalendar.date(
-            from: isoCalendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        let cal = weekStartDay.calendar
+        let monday = cal.date(
+            from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
         ) ?? Date()
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -709,12 +752,14 @@ struct ConfigModel: Codable {
     let weeklyGoal: Double
     let clientGoals: [ClientGoal]?
     let currencyCode: String
+    let contactEmail: String?
 
     enum CodingKeys: String, CodingKey {
         case id
         case weeklyGoal = "weekly_goal"
         case clientGoals = "client_goals"
         case currencyCode = "currency_code"
+        case contactEmail = "contact_email"
     }
 }
 
@@ -723,12 +768,14 @@ struct ConfigInsert: Codable {
     let weeklyGoal: Double
     let clientGoals: [ClientGoal]?
     let currencyCode: String
+    var contactEmail: String?
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
         case weeklyGoal = "weekly_goal"
         case clientGoals = "client_goals"
         case currencyCode = "currency_code"
+        case contactEmail = "contact_email"
     }
 }
 

@@ -92,6 +92,26 @@ struct ClientPickerView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 4)
 
+                    if recentClients.isEmpty {
+                        HStack(spacing: 8) {
+                            ForEach(["Personal", "General"], id: \.self) { suggestion in
+                                Button {
+                                    customClient = suggestion
+                                    selectedClient = suggestion
+                                    isCustomFocused = false
+                                } label: {
+                                    Text(suggestion)
+                                        .font(.subheadline)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
+                                        .foregroundStyle(.primary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
                     TextField("Type a client name...", text: $customClient)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 12)

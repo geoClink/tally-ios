@@ -83,7 +83,7 @@ struct PaywallView: View {
                             price: "Current plan",
                             color: .gray,
                             features: [
-                                "3 clients",
+                                "5 clients",
                                 "Basic timer",
                                 "7-day history"
                             ],
@@ -122,7 +122,7 @@ struct PaywallView: View {
                             color: .purple,
                             features: [
                                 "Everything in Pro",
-                                "Stripe invoice payments",
+                                "Client invoicing via email",
                                 "Team workspaces",
                                 "Shared client tracking"
                             ],
@@ -141,7 +141,7 @@ struct PaywallView: View {
                                     .foregroundStyle(captionColor)
                                     .multilineTextAlignment(.center)
                                     HStack(spacing: 16) {
-                                        Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
+                                        Link("Privacy Policy", destination: URL(string: "https://tallytimetracker.com/privacy")!)
                                         Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                                     }
                                     .font(.caption)
@@ -173,7 +173,7 @@ struct PaywallView: View {
                     }
 
                     HStack(spacing: 12) {
-                        Link("Privacy Policy", destination: URL(string: "https://geoclink.github.io/portfolio/tally/privacy.html")!)
+                        Link("Privacy Policy", destination: URL(string: "https://tallytimetracker.com/privacy")!)
                         Text("·").foregroundStyle(captionColor)
                         Link("Terms of Use", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
                     }

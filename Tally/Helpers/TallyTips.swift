@@ -34,7 +34,7 @@ struct InvoiceLockedTip: Tip {
 }
 
 struct ClientLimitTip: Tip {
-    var title: Text { Text("Free plan includes 3 clients") }
+    var title: Text { Text("Free plan includes 5 clients") }
     var message: Text? {
         Text("Upgrade to Tally Pro to track time for unlimited clients.")
     }
@@ -50,4 +50,12 @@ struct StartTimerTip: Tip {
         Text("Tap Start, pick a client, and Tally begins the clock. Stop when you're done to save the session.")
     }
     var image: Image? { Image(systemName: "timer") }
+}
+
+struct BillingPeriodTip: Tip {
+    var title: Text { Text("Track by billing cycle") }
+    var message: Text? {
+        Text("Set a billing start day to view this client's hours by billing period in Reports — useful when you bill on a custom schedule.")
+    }
+    var image: Image? { Image(systemName: "calendar.badge.clock") }
 }

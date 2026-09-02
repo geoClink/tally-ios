@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 struct ClientRateView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -14,6 +15,8 @@ struct ClientRateView: View {
     let client: String
     @State private var rateText: String = ""
     @State private var budgetText: String = ""
+    @State private var billingStartDayText: String = ""
+    private let billingTip = BillingPeriodTip()
 
     var body: some View {
         NavigationStack {
@@ -53,6 +56,35 @@ struct ClientRateView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                TipView(billingTip)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+
+                Section {
+                    HStack {
+                        Text("Billing start day")
+                        Spacer()
+                        TextField("None", text: $billingStartDayText)
+                            #if os(iOS)
+                            .keyboardType(.numberPad)
+                            #endif
+                            .multilineTextAlignment(.trailing)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 60)
+                            .accessibilityLabel("Billing start day")
+                            .accessibilityHint("Day of the month your billing cycle begins, 1 to 28")
+                        if !billingStartDayText.isEmpty {
+                            Text("of each month")
+                                .foregroundStyle(.secondary)
+                                .font(.subheadline)
+                        }
+                    }
+                } header: {
+                    Text("Billing Cycle")
+                } footer: {
+                    Text("Which day of the month your billing cycle starts. Once set, Reports shows hours grouped by billing period.")
+                }
             }
             .navigationTitle("Client Settings")
             .toolbar {
@@ -64,7 +96,8 @@ struct ClientRateView: View {
                         Task {
                             if let rate = Double(rateText) {
                                 let budget = Double(budgetText)
-                                await tallyStore.saveClientRate(client: client, hourlyRate: rate, budgetHours: budget)
+                                let billingDay = Int(billingStartDayText).flatMap { $0 >= 1 && $0 <= 28 ? $0 : nil }
+                                await tallyStore.saveClientRate(client: client, hourlyRate: rate, budgetHours: budget, billingStartDay: billingDay)
                             }
                             dismiss()
                         }
@@ -83,6 +116,9 @@ struct ClientRateView: View {
                     budgetText = budget.truncatingRemainder(dividingBy: 1) == 0
                         ? String(Int(budget))
                         : String(format: "%.1f", budget)
+                }
+                if let day = tallyStore.billingStartDay(for: client) {
+                    billingStartDayText = String(day)
                 }
             }
         }

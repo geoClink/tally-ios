@@ -56,6 +56,7 @@ struct HomeView: View {
     @State private var showManualEntry = false
     @State private var showGoalSetting = false
     @State private var showTaskNote = false
+    @State private var showSatisfactionPrompt = false
     @State private var selectedClient = ""
     @State private var taskNoteText = ""
     @State private var pendingHours: Double = 0
@@ -147,6 +148,17 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showManualEntry) { ManualEntryView() }
             .sheet(isPresented: $showGoalSetting) { GoalSettingView() }
+            .alert("Enjoying Tally?", isPresented: $showSatisfactionPrompt) {
+                Button("Yes, I love it!") {
+                    requestReview()
+                }
+                Button("Could be better") {
+                    // Let them report feedback instead of leaving a bad review
+                }
+                Button("Not now", role: .cancel) {}
+            } message: {
+                Text("Your feedback helps Tally improve. If you're happy with it, an App Store rating takes just a second.")
+            }
             .sheet(isPresented: $showTaskNote) {
                 TaskNoteSheet(
                     client: selectedClient,
@@ -411,6 +423,9 @@ struct HomeView: View {
             AppGroupStore.clearPendingIntents()
             pendingHours = viewModel.stop()
             showTaskNote = true
+        } else if let state = AppGroupStore.readTimerState(), !viewModel.isRunning {
+            // Timer was started via Siri while app was suspended in memory — resume it.
+            viewModel.start(client: state.client)
         }
     }
 
@@ -428,8 +443,11 @@ struct HomeView: View {
             NotificationManager.shared.requestPermission()
             NotificationManager.shared.scheduleFirstReturnNudge(todayHours: tallyStore.todayHours)
         }
-        if count == 3 || (count > 3 && (count - 3) % 15 == 0) {
-            requestReview()
+        if (count == 5 && trackingStreak >= 2) || (count > 5 && (count - 5) % 15 == 0 && trackingStreak >= 2) {
+            // Show satisfaction gate before asking for App Store review
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                showSatisfactionPrompt = true
+            }
         }
         updateStreak()
     }

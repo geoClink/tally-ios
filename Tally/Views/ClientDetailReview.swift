@@ -127,7 +127,7 @@ struct ClientDetailView: View {
                         Text(range.rawValue).tag(range)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
             }
             
             // Rate and invoice actions
