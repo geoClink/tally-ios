@@ -183,7 +183,8 @@ class TallyStore {
                 date: dateString,
                 taskNote: taskNote,
                 isManual: isManual,
-                isBillable: isBillable
+                isBillable: isBillable,
+                platform: "ios"
             )
             try await supabase
                 .from("sessions")
@@ -733,6 +734,7 @@ struct SessionInsert: Codable {
     let taskNote: String?
     let isManual: Bool
     let isBillable: Bool
+    let platform: String
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
@@ -744,6 +746,7 @@ struct SessionInsert: Codable {
         case taskNote = "task_note"
         case isManual = "is_manual"
         case isBillable = "is_billable"
+        case platform
     }
 }
 
