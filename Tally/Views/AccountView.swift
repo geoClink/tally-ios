@@ -12,6 +12,8 @@ struct AccountView: View {
     @State private var userEmail: String = ""
     @State private var showDeleteConfirmation = false
     @State private var showPaywall = false
+    @State private var stripeConnected = false
+    @State private var stripeConnecting = false
     @State private var showSupportSheet = false
     @State private var roundingRule: RoundingRule = .current
     @State private var showRoundingInfo = false
@@ -135,6 +137,22 @@ struct AccountView: View {
                                         accountRow(icon: "gearshape.fill", iconColor: .secondary, label: "Manage Subscription", trailing: nil, isAction: true)
                                     }
                                     .buttonStyle(.plain)
+                                }
+                                if purchases.currentTier == .business {
+                                    Divider().padding(.leading, 52)
+                                    Button {
+                                        Task { await connectStripe() }
+                                    } label: {
+                                        accountRow(
+                                            icon: stripeConnected ? "checkmark.circle.fill" : "creditcard.fill",
+                                            iconColor: stripeConnected ? .green : .blue,
+                                            label: stripeConnected ? "Stripe Connected" : (stripeConnecting ? "Connecting…" : "Connect Stripe"),
+                                            trailing: nil,
+                                            isAction: !stripeConnected
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(stripeConnected || stripeConnecting)
                                 }
                             }
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
@@ -494,5 +512,44 @@ struct AccountView: View {
 
     private func loadEmail() async {
         userEmail = (try? await supabase.auth.user())?.email ?? ""
+        await checkStripeStatus()
+    }
+
+    private func checkStripeStatus() async {
+        let result = try? await supabase
+            .from("stripe_connect_accounts")
+            .select("onboarded")
+            .eq("user_id", value: supabase.auth.currentUser?.id.uuidString ?? "")
+            .maybeSingle()
+            .execute()
+        if let data = result?.data,
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let onboarded = json["onboarded"] as? Bool {
+            stripeConnected = onboarded
+        }
+    }
+
+    private func connectStripe() async {
+        stripeConnecting = true
+        let returnURL = "https://tally-web-nu.vercel.app/billing?stripe_connected=true"
+        guard let session = try? await supabase.auth.session,
+              let url = URL(string: "https://fcmfuxoblbtxigknwhpz.supabase.co/functions/v1/create-connect-account") else {
+            stripeConnecting = false
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["return_url": returnURL])
+        guard let (data, _) = try? await URLSession.shared.data(for: request),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let urlString = json["url"] as? String,
+              let onboardingURL = URL(string: urlString) else {
+            stripeConnecting = false
+            return
+        }
+        stripeConnecting = false
+        await UIApplication.shared.open(onboardingURL)
     }
 }
