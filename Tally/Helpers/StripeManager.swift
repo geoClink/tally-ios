@@ -19,6 +19,7 @@ enum StripeManager {
         clientEmail: String,
         clientName: String,
         lineItems: [(description: String, hours: Double, rate: Double)],
+        memo: String? = nil,
         authToken: String
     ) async throws -> StripeInvoiceResult {
 
@@ -27,13 +28,14 @@ enum StripeManager {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(authToken)", forHTTPHeaderField: "Authorization")
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "clientEmail": clientEmail,
             "clientName": clientName,
             "lineItems": lineItems.map {
                 ["description": $0.description, "hours": $0.hours, "rate": $0.rate]
             }
         ]
+        if let memo { body["memo"] = memo }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)

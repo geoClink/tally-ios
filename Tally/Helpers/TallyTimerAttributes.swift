@@ -26,6 +26,7 @@ enum AppGroupKey {
     static let weeklyGoal            = "tallyWeeklyGoal"
     static let topClientToday        = "tallyTopClientToday"
     static let recentClients         = "tallyRecentClients"
+    static let weeklyEarnings        = "tallyWeeklyEarnings"
     // Background timer state (written by Siri intent + app)
     static let timerIsRunning        = "tallyTimerIsRunning"
     static let timerClient           = "tallyTimerClient"

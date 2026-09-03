@@ -79,7 +79,7 @@ struct CSVExporter {
         return fileURL
     }
 
-    private static func startDate(for range: ExportRange) -> Date? {
+    static func startDate(for range: ExportRange) -> Date? {
         let calendar = Calendar.current
         let now = Date()
         switch range {

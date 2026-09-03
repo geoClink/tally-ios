@@ -20,6 +20,7 @@ struct ClientOptionsProvider: DynamicOptionsProvider {
 struct StartTimerIntent: AppIntent {
     static var title: LocalizedStringResource = "Start Tally Timer"
     static var description = IntentDescription("Start tracking time for a client.")
+    static var openAppWhenRun: Bool = true
 
     @Parameter(title: "Client", description: "The client to track time for.",
                optionsProvider: ClientOptionsProvider())

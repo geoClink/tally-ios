@@ -586,8 +586,7 @@ struct ReportsView: View {
     }
 
     private var customRangeByClientForBilling: [(String, Double)] {
-        guard let startDay = tallyStore.billingStartDay(for: billingClient) else { return [] }
-        let periodStart = tallyStore.billingPeriodStart(startDay: startDay)
+        guard tallyStore.billingStartDay(for: billingClient) != nil else { return [] }
         let hours = tallyStore.billingPeriodHours(client: billingClient)
         return [(billingClient, hours)]
     }

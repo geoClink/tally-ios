@@ -4,6 +4,9 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct ManualEntryView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -17,10 +20,23 @@ struct ManualEntryView: View {
     @State private var selectedDate: Date
     @State private var taskNote: String
     @State private var isBillable: Bool
+    @State private var hoursText: String = ""
 
     private static let minuteOptions = Array(stride(from: 0, through: 55, by: 5))
 
-    init(prefillClient: String = "", prefillNote: String = "", existingSession: SessionModel? = nil) {
+    private func parseHoursText(_ text: String) -> Double {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return 0 }
+        if trimmed.contains(":") {
+            let parts = trimmed.split(separator: ":", maxSplits: 1)
+            let h = Double(parts.first ?? "0") ?? 0
+            let m = Double(parts.dropFirst().first ?? "0") ?? 0
+            return h + m / 60
+        }
+        return Double(trimmed) ?? 0
+    }
+
+    init(prefillClient: String = "", prefillNote: String = "", prefillHours: Double = 0, existingSession: SessionModel? = nil) {
         self.existingSession = existingSession
         _client = State(initialValue: existingSession?.client ?? prefillClient)
         _taskNote = State(initialValue: existingSession?.taskNote ?? prefillNote)
@@ -31,13 +47,16 @@ struct ManualEntryView: View {
             _selectedHours = State(initialValue: totalMins / 60)
             _selectedMinutes = State(initialValue: (totalMins % 60) / 5 * 5)
         } else {
-            _selectedHours = State(initialValue: 0)
-            _selectedMinutes = State(initialValue: 0)
+            let totalMins = Int((prefillHours * 60).rounded())
+            _selectedHours = State(initialValue: totalMins / 60)
+            _selectedMinutes = State(initialValue: (totalMins % 60) / 5 * 5)
         }
     }
 
     private var computedHours: Double {
-        Double(selectedHours) + Double(selectedMinutes) / 60.0
+        let parsed = parseHoursText(hoursText)
+        if parsed > 0 { return parsed }
+        return Double(selectedHours) + Double(selectedMinutes) / 60.0
     }
 
     private var canSave: Bool {
@@ -64,6 +83,13 @@ struct ManualEntryView: View {
                 }
 
                 Section("Duration") {
+                    TextField("Quick entry: 1:30 or 1.5", text: $hoursText)
+                        #if os(iOS)
+                        .keyboardType(.numbersAndPunctuation)
+                        #endif
+                        .accessibilityLabel("Hours quick entry")
+                        .accessibilityHint("Type hours as decimal like 1.5, or hours:minutes like 1:30")
+
                     #if os(iOS)
                     HStack(spacing: 0) {
                         Picker("Hours", selection: $selectedHours) {
@@ -164,6 +190,9 @@ struct ManualEntryView: View {
                     isBillable: isBillable
                 )
             }
+            #if os(iOS)
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            #endif
             dismiss()
         }
     }

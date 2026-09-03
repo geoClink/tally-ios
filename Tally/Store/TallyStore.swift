@@ -26,6 +26,7 @@ private struct TeamHoursParams: Encodable, Sendable {
 @Observable
 class TallyStore {
     var sessions: [SessionModel] = []
+    var invoices: [InvoiceModel] = []
 
     var visibleSessions: [SessionModel] {
         PurchaseManager.shared.applyHistoryLimit(to: sessions)
@@ -76,7 +77,13 @@ class TallyStore {
     var recentClients: [String] {
         Array(Set(sessions.map { $0.client })).sorted()
     }
-    
+
+    var weeklyEarnings: Double {
+        recentClients.reduce(0) { sum, client in
+            sum + weeklyHours(for: client) * hourlyRate(for: client)
+        }
+    }
+
     func hourlyRate(for client: String) -> Double {
         clientRates.first { $0.client == client }?.hourlyRate ?? 0
     }
@@ -164,6 +171,81 @@ class TallyStore {
         }
     }
     
+    func loadInvoices() async {
+        guard let user = try? await supabase.auth.user() else { return }
+        do {
+            let response: [InvoiceModel] = try await supabase
+                .from("invoices")
+                .select()
+                .eq("user_id", value: user.id.uuidString)
+                .order("created_at", ascending: false)
+                .execute()
+                .value
+            invoices = response
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Loading invoices")
+        }
+    }
+
+    @discardableResult
+    func saveInvoice(_ invoice: InvoiceInsert) async throws -> InvoiceModel {
+        let response: InvoiceModel = try await supabase
+            .from("invoices")
+            .insert(invoice)
+            .select()
+            .single()
+            .execute()
+            .value
+        invoices.insert(response, at: 0)
+        return response
+    }
+
+    func updateInvoiceStatus(id: UUID, status: String) async {
+        do {
+            let update: [String: String] = status == "paid"
+                ? ["status": status, "paid_at": ISO8601DateFormatter().string(from: Date())]
+                : ["status": status]
+            try await supabase
+                .from("invoices")
+                .update(update)
+                .eq("id", value: id.uuidString)
+                .execute()
+            if let idx = invoices.firstIndex(where: { $0.id == id }) {
+                invoices[idx] = InvoiceModel(
+                    id: invoices[idx].id, invoiceNumber: invoices[idx].invoiceNumber,
+                    yourName: invoices[idx].yourName, client: invoices[idx].client,
+                    clientEmail: invoices[idx].clientEmail, startDate: invoices[idx].startDate,
+                    endDate: invoices[idx].endDate, totalHours: invoices[idx].totalHours,
+                    hourlyRate: invoices[idx].hourlyRate, totalAmount: invoices[idx].totalAmount,
+                    taxRate: invoices[idx].taxRate, taxAmount: invoices[idx].taxAmount,
+                    memo: invoices[idx].memo, status: status,
+                    stripeInvoiceId: invoices[idx].stripeInvoiceId,
+                    stripeInvoiceUrl: invoices[idx].stripeInvoiceUrl,
+                    lineItems: invoices[idx].lineItems, createdAt: invoices[idx].createdAt
+                )
+            }
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Updating invoice status")
+        }
+    }
+
+    func deleteInvoice(id: UUID) async {
+        do {
+            try await supabase
+                .from("invoices")
+                .delete()
+                .eq("id", value: id.uuidString)
+                .execute()
+            invoices.removeAll { $0.id == id }
+        } catch {
+            ErrorHandler.shared.handle(error, context: "Deleting invoice")
+        }
+    }
+
+    func clientEmail(for client: String) -> String {
+        clientRates.first { $0.client == client }?.clientEmail ?? ""
+    }
+
     func addSession(client: String, hours: Double, taskNote: String?, date: Date = Date(), isManual: Bool = false, isBillable: Bool = true) async {
         guard let user = try? await supabase.auth.user() else {
             ErrorHandler.shared.handle("No user logged in")
@@ -329,6 +411,7 @@ class TallyStore {
             weeklyGoal: weeklyGoal,
             topClient: topClient,
             recentClients: recentClients,
+            weeklyEarnings: weeklyEarnings,
             isPro: PurchaseManager.shared.hasWatchAndWidgets
         )
         WidgetCenter.shared.reloadAllTimelines()

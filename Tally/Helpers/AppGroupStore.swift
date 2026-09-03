@@ -24,14 +24,16 @@ enum AppGroupStore {
         weeklyGoal: Double,
         topClient: String,
         recentClients: [String],
+        weeklyEarnings: Double = 0,
         isPro: Bool = false
     ) {
-        defaults.set(todayHours,    forKey: AppGroupKey.todayHours)
-        defaults.set(weeklyHours,   forKey: AppGroupKey.weeklyHours)
-        defaults.set(weeklyGoal,    forKey: AppGroupKey.weeklyGoal)
-        defaults.set(topClient,     forKey: AppGroupKey.topClientToday)
-        defaults.set(recentClients, forKey: AppGroupKey.recentClients)
-        defaults.set(isPro,         forKey: "isPro")
+        defaults.set(todayHours,       forKey: AppGroupKey.todayHours)
+        defaults.set(weeklyHours,      forKey: AppGroupKey.weeklyHours)
+        defaults.set(weeklyGoal,       forKey: AppGroupKey.weeklyGoal)
+        defaults.set(topClient,        forKey: AppGroupKey.topClientToday)
+        defaults.set(recentClients,    forKey: AppGroupKey.recentClients)
+        defaults.set(weeklyEarnings,   forKey: AppGroupKey.weeklyEarnings)
+        defaults.set(isPro,            forKey: "isPro")
     }
 
     static func readIsPro() -> Bool {

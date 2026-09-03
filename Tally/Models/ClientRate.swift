@@ -13,6 +13,7 @@ struct ClientRate: Codable, Identifiable {
     var hourlyRate: Double
     var budgetHours: Double?
     var billingStartDay: Int?
+    var clientEmail: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -20,6 +21,7 @@ struct ClientRate: Codable, Identifiable {
         case hourlyRate = "hourly_rate"
         case budgetHours = "budget_hours"
         case billingStartDay = "billing_start_day"
+        case clientEmail = "client_email"
     }
 }
 

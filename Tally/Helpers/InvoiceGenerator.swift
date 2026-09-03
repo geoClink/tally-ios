@@ -21,11 +21,14 @@ struct InvoicePDFGenerator {
         client: String,
         sessions: [SessionModel],
         hourlyRate: Double,
+        taxRate: Double = 0,
         notes: String,
         paymentLink: String = ""
     ) async -> URL? {
         let totalHours = sessions.reduce(0) { $0 + $1.hours }
-        let totalAmount = totalHours * hourlyRate
+        let subtotal = totalHours * hourlyRate
+        let taxAmount = subtotal * (taxRate / 100)
+        let totalAmount = subtotal + taxAmount
         let dateStr = Date().formatted(date: .long, time: .omitted)
         
         let html = """
@@ -80,6 +83,16 @@ struct InvoicePDFGenerator {
                 <th>Amount</th>
             </tr>
             \(sessionRows(sessions: sessions, hourlyRate: hourlyRate))
+            \(taxRate > 0 ? """
+            <tr>
+                <td colspan="4" style="text-align:right;color:#666;">Subtotal</td>
+                <td>\(subtotal.formatted(.currency(code: CurrencyPreference.current)))</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="text-align:right;color:#666;">Tax (\(String(format: "%.g", taxRate))%)</td>
+                <td>\(taxAmount.formatted(.currency(code: CurrencyPreference.current)))</td>
+            </tr>
+            """ : "")
             <tr class="total-row">
                 <td colspan="2">Total</td>
                 <td>\(TimeFormatter.shortFormat(totalHours))</td>

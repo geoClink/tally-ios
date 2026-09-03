@@ -516,17 +516,15 @@ struct AccountView: View {
     }
 
     private func checkStripeStatus() async {
-        let result = try? await supabase
+        struct ConnectRow: Decodable { let onboarded: Bool }
+        let rows: [ConnectRow]? = try? await supabase
             .from("stripe_connect_accounts")
             .select("onboarded")
             .eq("user_id", value: supabase.auth.currentUser?.id.uuidString ?? "")
-            .maybeSingle()
+            .limit(1)
             .execute()
-        if let data = result?.data,
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let onboarded = json["onboarded"] as? Bool {
-            stripeConnected = onboarded
-        }
+            .value
+        stripeConnected = rows?.first?.onboarded ?? false
     }
 
     private func connectStripe() async {

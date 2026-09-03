@@ -30,6 +30,12 @@ struct HomeView: View {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
     }
 
+    private var weeklyEarnings: Double {
+        tallyStore.recentClients.reduce(0) { sum, client in
+            sum + tallyStore.weeklyHours(for: client) * tallyStore.hourlyRate(for: client)
+        }
+    }
+
     private var timerFontSize: CGFloat {
         switch dynamicTypeSize {
         case .xSmall, .small: return 38
@@ -310,6 +316,12 @@ struct HomeView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary.opacity(0.4))
                             .accessibilityLabel("\(TimeFormatter.accessibleFormat(tallyStore.weeklyHours)) tracked this week")
+                    }
+                    if weeklyEarnings > 0 {
+                        Text(weeklyEarnings.formatted(.currency(code: CurrencyPreference.current)))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary.opacity(0.55))
+                            .accessibilityLabel("Estimated earnings this week: \(weeklyEarnings.formatted(.currency(code: CurrencyPreference.current)))")
                     }
                     if trackingStreak >= 2 {
                         Text("\(trackingStreak)-day streak")

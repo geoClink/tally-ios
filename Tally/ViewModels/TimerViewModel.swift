@@ -6,6 +6,9 @@
 import Foundation
 import Combine
 import AppIntents
+#if os(iOS)
+import UserNotifications
+#endif
 
 @MainActor
 @Observable
@@ -45,6 +48,9 @@ class TimerViewModel {
         accumulatedSeconds = 0
         startTicking()
         AppGroupStore.writeTimerState(client: client, startDate: .now, isPaused: false, accumulated: 0)
+        #if os(iOS)
+        scheduleIdleNotification(client: client)
+        #endif
         #if !canImport(AppKit)
         LiveActivityManager.shared.start(client: client)
         #endif
@@ -92,6 +98,9 @@ class TimerViewModel {
     func stop() -> Double {
         let total = accumulatedSeconds + (isPaused ? 0 : secondsSinceStart())
         AppGroupStore.clearTimerState()
+        #if os(iOS)
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["tally.idle"])
+        #endif
         #if !canImport(AppKit)
         LiveActivityManager.shared.end()
         #endif
@@ -108,6 +117,19 @@ class TimerViewModel {
         startTime = nil
         activeClient = ""
     }
+
+    #if os(iOS)
+    private func scheduleIdleNotification(client: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["tally.idle"])
+        let content = UNMutableNotificationContent()
+        content.title = "Still working?"
+        content.body = "Your Tally timer for \(client) has been running for 2 hours."
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 7200, repeats: false)
+        let request = UNNotificationRequest(identifier: "tally.idle", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request)
+    }
+    #endif
 
     private func startTicking() {
         timer = Timer.publish(every: 1, on: .main, in: .common)
