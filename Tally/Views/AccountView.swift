@@ -14,6 +14,7 @@ struct AccountView: View {
     @State private var showPaywall = false
     @State private var stripeConnected = false
     @State private var stripeConnecting = false
+    @State private var showDisconnectConfirm = false
     @State private var showSupportSheet = false
     @State private var roundingRule: RoundingRule = .current
     @State private var showRoundingInfo = false
@@ -141,18 +142,29 @@ struct AccountView: View {
                                 if purchases.currentTier == .business {
                                     Divider().padding(.leading, 52)
                                     Button {
-                                        Task { await connectStripe() }
+                                        if stripeConnected {
+                                            showDisconnectConfirm = true
+                                        } else {
+                                            Task { await connectStripe() }
+                                        }
                                     } label: {
                                         accountRow(
                                             icon: stripeConnected ? "checkmark.circle.fill" : "creditcard.fill",
                                             iconColor: stripeConnected ? .green : .blue,
                                             label: stripeConnected ? "Stripe Connected" : (stripeConnecting ? "Connecting…" : "Connect Stripe"),
                                             trailing: nil,
-                                            isAction: !stripeConnected
+                                            isAction: true
                                         )
                                     }
                                     .buttonStyle(.plain)
-                                    .disabled(stripeConnected || stripeConnecting)
+                                    .disabled(stripeConnecting)
+                                    .confirmationDialog("Disconnect Stripe?", isPresented: $showDisconnectConfirm, titleVisibility: .visible) {
+                                        Button("Disconnect", role: .destructive) {
+                                            Task { await disconnectStripe() }
+                                        }
+                                    } message: {
+                                        Text("You can reconnect at any time.")
+                                    }
                                 }
                             }
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
@@ -549,5 +561,17 @@ struct AccountView: View {
         }
         stripeConnecting = false
         await UIApplication.shared.open(onboardingURL)
+    }
+
+    private func disconnectStripe() async {
+        guard let session = try? await supabase.auth.session,
+              let url = URL(string: "https://fcmfuxoblbtxigknwhpz.supabase.co/functions/v1/create-connect-account") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["action": "disconnect"])
+        _ = try? await URLSession.shared.data(for: request)
+        stripeConnected = false
     }
 }

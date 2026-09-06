@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 import Supabase
 import WidgetKit
 
@@ -414,7 +415,9 @@ class TallyStore {
             weeklyEarnings: weeklyEarnings,
             isPro: PurchaseManager.shared.hasWatchAndWidgets
         )
+        #if !os(visionOS)
         WidgetCenter.shared.reloadAllTimelines()
+        #endif
     }
 
     func drainPendingQueue() async {
@@ -428,17 +431,25 @@ class TallyStore {
 
     func deleteSessions(at offsets: IndexSet) async {
         let sessionsToDelete = offsets.map { sessions[$0] }
+        sessions.remove(atOffsets: offsets)
+        writeWidgetSummary()
         do {
             for session in sessionsToDelete {
-                try await supabase
+                let deleted: [SessionModel] = try await supabase
                     .from("sessions")
                     .delete()
                     .eq("id", value: session.id.uuidString)
+                    .select()
                     .execute()
+                    .value
+                if deleted.isEmpty {
+                    await loadSessions()
+                    return
+                }
             }
-            await loadSessions()
         } catch {
-            ErrorHandler.shared.handle(error, context: "Deleting session")
+            await loadSessions()
+            ErrorHandler.shared.handle(error, context: "Deleting sessions")
         }
     }
 
@@ -446,11 +457,16 @@ class TallyStore {
         sessions.removeAll { $0.id == session.id }
         writeWidgetSummary()
         do {
-            try await supabase
+            let deleted: [SessionModel] = try await supabase
                 .from("sessions")
                 .delete()
                 .eq("id", value: session.id.uuidString)
+                .select()
                 .execute()
+                .value
+            if deleted.isEmpty {
+                await loadSessions()
+            }
         } catch {
             await loadSessions()
             ErrorHandler.shared.handle(error, context: "Deleting session")

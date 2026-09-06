@@ -36,7 +36,10 @@ struct HomeView: View {
         }
     }
 
+    private var isMac: Bool { ProcessInfo.processInfo.isiOSAppOnMac }
+
     private var timerFontSize: CGFloat {
+        if isMac { return 56 }
         switch dynamicTypeSize {
         case .xSmall, .small: return 38
         case .medium: return 42
@@ -90,21 +93,21 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    Spacer()
+                    Spacer().frame(maxHeight: isMac ? 40 : .infinity)
 
                     timerRing
 
                     if !tallyStore.clientGoals.isEmpty && !viewModel.isRunning {
                         clientGoalsSummary
                             .padding(.horizontal)
-                            .padding(.top, 24)
+                            .padding(.top, isMac ? 12 : 24)
                     }
 
-                    Spacer()
+                    Spacer().frame(maxHeight: isMac ? 40 : .infinity)
 
                     controls
                         .padding(.horizontal)
-                        .padding(.bottom, 36)
+                        .padding(.bottom, isMac ? 16 : 36)
                         .animation(.spring(duration: 0.3), value: viewModel.isRunning)
                 }
             }
@@ -125,6 +128,8 @@ struct HomeView: View {
                 }
             }
             .task {
+                await tallyStore.loadConfig()
+                await tallyStore.loadSessions()
                 await applyFocusFilter()
                 checkPendingIntents()
             }
@@ -347,7 +352,7 @@ struct HomeView: View {
                 .transition(.scale(scale: 0.7).combined(with: .opacity))
             }
         }
-        .frame(width: 260, height: 260)
+        .frame(width: isMac ? 340 : 260, height: isMac ? 340 : 260)
     }
 
     @ViewBuilder
@@ -372,6 +377,7 @@ struct HomeView: View {
                             .offset(x: 3) // optical center for play icon
                     }
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Start timer")
                 .accessibilityHint("Opens client picker to begin tracking time")
 
@@ -401,6 +407,7 @@ struct HomeView: View {
                                 .fill(viewModel.isPaused ? Color.blue : accessibleOrange)
                         )
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(viewModel.isPaused ? "Resume timer" : "Pause timer")
 
                 Button {
@@ -418,6 +425,7 @@ struct HomeView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(accessibleRed))
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Stop timer")
                 .accessibilityHint("Stops and saves the current session for \(viewModel.activeClient)")
             }

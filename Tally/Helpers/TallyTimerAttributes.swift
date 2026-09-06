@@ -5,7 +5,7 @@
 
 import Foundation
 
-#if !canImport(AppKit)
+#if !canImport(AppKit) && !os(visionOS)
 import ActivityKit
 
 struct TallyTimerAttributes: ActivityAttributes {

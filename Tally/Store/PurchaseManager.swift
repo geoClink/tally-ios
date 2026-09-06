@@ -58,15 +58,15 @@ final class PurchaseManager {
     }
 
     func purchase(_ product: Product) async {
+        #if !os(visionOS)
         isPurchasing = true
         errorMessage = nil
         defer { isPurchasing = false }
         do {
-            let result = try await product.purchase()
+            let result = try await product.purchase(options: [])
             switch result {
             case .success(let verification):
                 let transaction = try verified(verification)
-                // Update tier immediately so the UI dismisses without waiting on Supabase sync
                 switch transaction.productID {
                 case Self.businessID: currentTier = max(currentTier, .business)
                 case Self.proID:      currentTier = max(currentTier, .pro)
@@ -82,6 +82,7 @@ final class PurchaseManager {
         } catch {
             errorMessage = error.localizedDescription
         }
+        #endif
     }
 
     func restore() async {

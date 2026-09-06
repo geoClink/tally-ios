@@ -7,7 +7,9 @@ import SwiftUI
 import Auth
 import Supabase
 import TipKit
+#if !os(visionOS)
 import GoogleSignIn
+#endif
 
 @main
 struct TallyApp: App {
@@ -15,17 +17,16 @@ struct TallyApp: App {
     @State private var timerViewModel = TimerViewModel()
 
     init() {
-        // Boot TipKit
         try? Tips.configure([
             .displayFrequency(.immediate),
             .datastoreLocation(.applicationDefault)
         ])
-        // Boot PurchaseManager so it starts listening for transactions immediately
         _ = PurchaseManager.shared
-        // Configure Google Sign-In
+        #if !os(visionOS)
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(
             clientID: "642377971570-6at6jltqmpi05ltpn4fek94m54488tqr.apps.googleusercontent.com"
         )
+        #endif
     }
 
     var body: some Scene {
@@ -34,9 +35,9 @@ struct TallyApp: App {
                 .environment(tallyStore)
                 .environment(timerViewModel)
                 .onOpenURL { url in
-                    // Google Sign-In callback
+                    #if !os(visionOS)
                     if GIDSignIn.sharedInstance.handle(url) { return }
-                    // Supabase auth callback
+                    #endif
                     Task {
                         try? await supabase.auth.session(from: url)
                     }
@@ -51,5 +52,26 @@ struct TallyApp: App {
                     }
                 }
         }
+        #if os(visionOS)
+        .defaultLaunchBehavior(.presented)
+        #endif
+
+        #if os(visionOS)
+        WindowGroup(id: "timer-volume") {
+            TimerVolumeView()
+                .environment(timerViewModel)
+                .environment(tallyStore)
+        }
+        .windowStyle(.volumetric)
+        .defaultSize(width: 0.3, height: 0.3, depth: 0.3, in: .meters)
+        .defaultWindowPlacement { _, context in
+            // Place the volume to the left of the main window
+            if let mainWindow = context.windows.first(where: { $0.id != "timer-volume" }) {
+                return WindowPlacement(.leading(mainWindow))
+            }
+            return WindowPlacement()
+        }
+        .defaultLaunchBehavior(.suppressed)
+        #endif
     }
 }

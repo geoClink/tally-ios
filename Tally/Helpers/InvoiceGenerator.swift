@@ -7,7 +7,7 @@
 
 import Foundation
 import PDFKit
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import UIKit
 #else
 import AppKit

@@ -9,7 +9,9 @@ import SwiftUI
 import Supabase
 import AuthenticationServices
 import CryptoKit
+#if !os(visionOS)
 import GoogleSignIn
+#endif
 
 struct AuthView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -142,20 +144,29 @@ struct AuthView: View {
                 } label: {
                     Group {
                         if isLoading {
-                            ProgressView().tint(.white)
+                            ProgressView()
+                                #if !os(visionOS)
+                                .tint(.white)
+                                #endif
                         } else {
                             Text(isSignUp ? "Create Account" : "Sign In")
                                 .font(.system(size: 16, weight: .semibold))
                         }
                     }
-                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
+                    #if !os(visionOS)
+                    .foregroundStyle(.white)
                     .frame(height: 50)
                     .background(Color.blue, in: RoundedRectangle(cornerRadius: 12))
+                    #endif
                 }
                 .disabled(isLoading || !formIsValid)
                 .padding(.horizontal)
                 .padding(.top, 16)
+                #if os(visionOS)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                #endif
 
                 VStack(spacing: 10) {
                     Button {
@@ -193,6 +204,7 @@ struct AuthView: View {
 
                 // Social sign-in — both buttons at Google's native 44pt height
                 VStack(spacing: 12) {
+                    #if !os(visionOS)
                     Button {
                         Task { await handleGoogleSignIn() }
                     } label: {
@@ -202,6 +214,7 @@ struct AuthView: View {
                             .frame(height: 44)
                     }
                     .disabled(isLoading)
+                    #endif
 
                     SignInWithAppleButton(.signIn) { request in
                         let nonce = randomNonceString()
@@ -227,6 +240,7 @@ struct AuthView: View {
     }
 
     private func handleGoogleSignIn() async {
+        #if !os(visionOS)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
             errorMessage = "Unable to present Google Sign-In."
@@ -251,6 +265,7 @@ struct AuthView: View {
             }
         }
         isLoading = false
+        #endif
     }
 
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async {

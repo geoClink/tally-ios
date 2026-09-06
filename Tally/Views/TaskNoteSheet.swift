@@ -123,21 +123,34 @@ struct TaskNoteSheet: View {
                 Button(action: onSkip) {
                     Text("Skip")
                         .font(.headline)
-                        .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
+                        #if !os(visionOS)
+                        .foregroundStyle(.secondary)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(Color(.secondarySystemBackground)))
+                        #endif
                 }
+                #if os(visionOS)
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                #endif
                 .accessibilityHint("Saves session without adding a note")
 
                 Button(action: onSave) {
                     Text("Save Note")
                         .font(.headline)
-                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
+                        #if !os(visionOS)
+                        .foregroundStyle(.white)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(noteText.isEmpty ? Color.blue.opacity(0.5) : Color.blue))
+                        #endif
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(noteText.isEmpty)
+                #endif
                 .accessibilityHint(noteText.isEmpty ? "Saves session without a note" : "Saves your note with this session")
             }
             .padding(.horizontal)

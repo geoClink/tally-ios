@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-#if os(iOS) && !canImport(AppKit)
+#if os(iOS) || os(visionOS)
 struct ShareSheet: UIViewControllerRepresentable {
     let url: URL
 

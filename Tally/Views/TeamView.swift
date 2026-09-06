@@ -172,10 +172,16 @@ struct TeamView: View {
             Button { showCreateWorkspace = true } label: {
                 Label("Create Workspace", systemImage: "plus")
                     .font(.headline)
+                    #if !os(visionOS)
                     .foregroundStyle(.white)
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 12).fill(Color.blue))
+                    #endif
             }
+            #if os(visionOS)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            #endif
             Spacer()
         }
     }
@@ -723,7 +729,10 @@ private struct InviteMemberSheet: View {
                 Group {
                     if isSending {
                         HStack(spacing: 8) {
-                            ProgressView().tint(.white)
+                            ProgressView()
+                                #if !os(visionOS)
+                                .tint(.white)
+                                #endif
                             Text("Sending…")
                         }
                     } else {
@@ -731,13 +740,19 @@ private struct InviteMemberSheet: View {
                     }
                 }
                 .font(.headline)
-                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
+                #if !os(visionOS)
+                .foregroundStyle(.white)
                 .padding(.vertical, 14)
                 .background(isValidEmail && !isSending ? Color.blue : Color.blue.opacity(0.4),
                             in: RoundedRectangle(cornerRadius: 14))
+                #endif
             }
             .disabled(!isValidEmail || isSending)
+            #if os(visionOS)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            #endif
             .padding(.horizontal, 24)
             .padding(.bottom, 32)
         }

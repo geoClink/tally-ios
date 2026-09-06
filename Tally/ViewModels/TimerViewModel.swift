@@ -51,7 +51,7 @@ class TimerViewModel {
         #if os(iOS)
         scheduleIdleNotification(client: client)
         #endif
-        #if !canImport(AppKit)
+        #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.start(client: client)
         #endif
         if #available(iOS 17, *) {
@@ -74,7 +74,7 @@ class TimerViewModel {
             isPaused: true,
             accumulated: accumulatedSeconds
         )
-        #if !canImport(AppKit)
+        #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.pause(accumulatedSeconds: accumulatedSeconds)
         #endif
     }
@@ -90,7 +90,7 @@ class TimerViewModel {
             isPaused: false,
             accumulated: accumulatedSeconds
         )
-        #if !canImport(AppKit)
+        #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.resume(accumulatedSeconds: accumulatedSeconds)
         #endif
     }
@@ -101,7 +101,7 @@ class TimerViewModel {
         #if os(iOS)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["tally.idle"])
         #endif
-        #if !canImport(AppKit)
+        #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.end()
         #endif
         reset()

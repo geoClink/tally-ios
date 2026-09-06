@@ -8,6 +8,15 @@
 import SwiftUI
 import Supabase
 
+private struct SpacedSidebarLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 10) {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
+
 private enum Tab: Hashable {
     case timer, reports, activity, team, account
 }
@@ -41,9 +50,20 @@ struct ContentView: View {
                         Label("Account", systemImage: "person.circle").tag(Tab.account)
                     }
                     .navigationTitle("Tally")
+                    .listStyle(.sidebar)
+                    .labelStyle(SpacedSidebarLabelStyle())
+                    #if os(visionOS)
+                    .glassBackgroundEffect()
+                    #endif
                 } detail: {
                     switch selectedTab {
-                    case .timer:    HomeView()
+                    case .timer:
+                        HomeView()
+                        #if os(visionOS)
+                            .ornament(attachmentAnchor: .scene(.bottom)) {
+                                TimerVolumeOrnament()
+                            }
+                        #endif
                     case .reports:  ReportsView()
                     case .activity: CalendarView()
                     case .team:     TeamView()
