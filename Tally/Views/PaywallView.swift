@@ -120,8 +120,8 @@ struct PaywallView: View {
                             name: "Tally Business",
                             price: businessPriceLabel,
                             color: .purple,
+                            subtitle: "Includes all Pro features",
                             features: [
-                                "Everything in Pro",
                                 "Client invoicing via email",
                                 "Team workspaces",
                                 "Shared client tracking"
@@ -171,6 +171,7 @@ struct PaywallView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
+                    .buttonStyle(.plain)
 
                     HStack(spacing: 12) {
                         Link("Privacy Policy", destination: URL(string: "https://tallytimetracker.com/privacy")!)
@@ -224,6 +225,7 @@ private struct TierCard: View {
     let name: String
     let price: String
     let color: Color
+    var subtitle: String? = nil
     let features: [String]
     var isCurrent: Bool = false
     var purchaseLabel: String? = nil
@@ -236,6 +238,12 @@ private struct TierCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name).font(.headline)
                     Text(price).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(color)
+                            .padding(.top, 1)
+                    }
                 }
                 Spacer()
                 if isCurrent {
@@ -271,6 +279,7 @@ private struct TierCard: View {
                         .padding(.vertical, 12)
                         .background(color, in: RoundedRectangle(cornerRadius: 10))
                 }
+                .buttonStyle(.plain)
                 .accessibilityHint("Purchases \(name) plan")
                 .padding(.top, 4)
             }

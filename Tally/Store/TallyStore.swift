@@ -129,7 +129,9 @@ class TallyStore {
                 .value
             sessions = response
             let isPro = PurchaseManager.shared.hasWatchAndWidgets
+            #if os(iOS)
             PhoneSessionManager.shared.sendClients(isPro ? recentClients : [], isPro: isPro)
+            #endif
             writeWidgetSummary()
             let summaryEnabled = UserDefaults.standard.bool(forKey: NotificationManager.weeklySummaryKey)
             NotificationManager.shared.scheduleWeeklySummary(weeklyHours: weeklyHours, enabled: summaryEnabled)
@@ -406,6 +408,7 @@ class TallyStore {
         var byClient: [String: Double] = [:]
         for s in todaySessions { byClient[s.client, default: 0] += s.hours }
         let topClient = byClient.max(by: { $0.value < $1.value })?.key ?? ""
+        #if os(iOS)
         AppGroupStore.writeSummary(
             todayHours: todayHours,
             weeklyHours: weeklyHours,
@@ -415,18 +418,21 @@ class TallyStore {
             weeklyEarnings: weeklyEarnings,
             isPro: PurchaseManager.shared.hasWatchAndWidgets
         )
+        #endif
         #if !os(visionOS)
         WidgetCenter.shared.reloadAllTimelines()
         #endif
     }
 
     func drainPendingQueue() async {
+        #if os(iOS)
         let queue = AppGroupStore.pendingSessionsQueue()
         guard !queue.isEmpty else { return }
         AppGroupStore.clearPendingSessionsQueue()
         for session in queue {
             await addSession(client: session.client, hours: session.hours, taskNote: nil)
         }
+        #endif
     }
 
     func deleteSessions(at offsets: IndexSet) async {

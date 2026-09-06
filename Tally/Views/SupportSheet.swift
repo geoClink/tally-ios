@@ -93,6 +93,9 @@ struct SupportSheet: View {
                 }
             }
             .navigationTitle("Report a Problem")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

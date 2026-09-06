@@ -13,6 +13,11 @@ import GoogleSignIn
 
 @main
 struct TallyApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #elseif os(macOS)
+    @NSApplicationDelegateAdaptor(MacAppDelegate.self) var appDelegate
+    #endif
     @State private var tallyStore = TallyStore()
     @State private var timerViewModel = TimerViewModel()
 

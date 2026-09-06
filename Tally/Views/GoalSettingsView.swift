@@ -64,12 +64,15 @@ struct GoalSettingView: View {
                 }
             }
             .navigationTitle("Goals")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .foregroundStyle(.secondary)
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task {
                             await tallyStore.saveGoal(totalGoalEnabled ? goalHours : 0)
@@ -125,11 +128,13 @@ struct GoalSettingView: View {
             .buttonStyle(.plain)
 
             TextField("0", value: value, format: .number)
+                #if os(iOS)
                 .keyboardType(.numberPad)
+                #endif
                 .multilineTextAlignment(.center)
                 .frame(width: 46)
                 .padding(.vertical, 4)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+                .background(Color.secondaryBackground, in: RoundedRectangle(cornerRadius: 8))
                 .onChange(of: value.wrappedValue) { _, newVal in
                     value.wrappedValue = min(range.upperBound, max(range.lowerBound, newVal))
                 }

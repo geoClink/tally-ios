@@ -23,6 +23,7 @@ class TimerViewModel {
     private var startTime: Date?
 
     init() {
+        #if os(iOS)
         // Resume a timer that was started via Siri while the app was closed
         if let state = AppGroupStore.readTimerState() {
             activeClient = state.client
@@ -37,6 +38,7 @@ class TimerViewModel {
                 startTicking()
             }
         }
+        #endif
     }
 
     func start(client: String) {
@@ -47,13 +49,14 @@ class TimerViewModel {
         startTime = .now
         accumulatedSeconds = 0
         startTicking()
-        AppGroupStore.writeTimerState(client: client, startDate: .now, isPaused: false, accumulated: 0)
         #if os(iOS)
+        AppGroupStore.writeTimerState(client: client, startDate: .now, isPaused: false, accumulated: 0)
         scheduleIdleNotification(client: client)
         #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.start(client: client)
         #endif
+        #if os(iOS)
         if #available(iOS 17, *) {
             Task {
                 let intent = StartTimerIntent()
@@ -61,6 +64,7 @@ class TimerViewModel {
                 _ = try? await IntentDonationManager.shared.donate(intent: intent)
             }
         }
+        #endif
     }
 
     func pause() {
@@ -68,12 +72,14 @@ class TimerViewModel {
         isPaused = true
         accumulatedSeconds += secondsSinceStart()
         timer?.cancel()
+        #if os(iOS)
         AppGroupStore.writeTimerState(
             client: activeClient,
             startDate: startTime ?? .now,
             isPaused: true,
             accumulated: accumulatedSeconds
         )
+        #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.pause(accumulatedSeconds: accumulatedSeconds)
         #endif
@@ -84,12 +90,14 @@ class TimerViewModel {
         isPaused = false
         startTime = .now
         startTicking()
+        #if os(iOS)
         AppGroupStore.writeTimerState(
             client: activeClient,
             startDate: .now,
             isPaused: false,
             accumulated: accumulatedSeconds
         )
+        #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.resume(accumulatedSeconds: accumulatedSeconds)
         #endif
@@ -97,7 +105,9 @@ class TimerViewModel {
 
     func stop() -> Double {
         let total = accumulatedSeconds + (isPaused ? 0 : secondsSinceStart())
+        #if os(iOS)
         AppGroupStore.clearTimerState()
+        #endif
         #if os(iOS)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["tally.idle"])
         #endif

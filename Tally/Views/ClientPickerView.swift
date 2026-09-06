@@ -71,7 +71,7 @@ struct ClientPickerView: View {
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(selectedClient == client ? Color.blue.opacity(0.1) : Color(.secondarySystemBackground))
+                                        .fill(selectedClient == client ? Color.blue.opacity(0.1) : Color.secondaryBackground)
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
@@ -104,7 +104,7 @@ struct ClientPickerView: View {
                                         .font(.subheadline)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
+                                        .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondaryBackground))
                                         .foregroundStyle(.primary)
                                 }
                                 .buttonStyle(.plain)
@@ -117,7 +117,7 @@ struct ClientPickerView: View {
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.secondarySystemBackground))
+                                .fill(Color.secondaryBackground)
                         )
                         .focused($isCustomFocused)
                         .accessibilityLabel("New client name")
@@ -141,6 +141,7 @@ struct ClientPickerView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(Color.purple))
                 }
+                .buttonStyle(.plain)
                 .popoverTip(clientLimitTip)
             } else {
                 Button {
@@ -156,6 +157,7 @@ struct ClientPickerView: View {
                                 .fill(canStart ? Color.green : Color.gray.opacity(0.4))
                         )
                 }
+                .buttonStyle(.plain)
                 .disabled(!canStart)
                 .accessibilityLabel("Start Tally")
                 .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")

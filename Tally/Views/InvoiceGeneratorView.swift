@@ -200,6 +200,9 @@ struct InvoiceGeneratorView: View {
                 }
             }
             .navigationTitle("Create Invoice")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -214,12 +217,17 @@ struct InvoiceGeneratorView: View {
             .sheet(isPresented: $showRatePicker) {
                 ClientRateView(client: client)
             }
+            #if os(iOS)
             .sheet(isPresented: $showShareSheet) {
                 if let url = generatedURL {
                     ShareSheet(url: url)
                 }
             }
+            #endif
         }
+        #if os(macOS)
+        .frame(minWidth: 600)
+        #endif
     }
 
     private var generateButton: some View {
@@ -274,9 +282,13 @@ struct InvoiceGeneratorView: View {
             notes: notes
         )
         isGenerating = false
-        if generatedURL != nil {
+        if let url = generatedURL {
             await saveInvoiceRecord(status: "draft")
+            #if os(iOS)
             showShareSheet = true
+            #else
+            NSWorkspace.shared.open(url)
+            #endif
         }
     }
 

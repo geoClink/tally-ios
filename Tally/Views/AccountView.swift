@@ -6,6 +6,7 @@
 import SwiftUI
 import StoreKit
 import Supabase
+import UserNotifications
 
 struct AccountView: View {
     @Environment(TallyStore.self) var tallyStore
@@ -24,6 +25,9 @@ struct AccountView: View {
     @AppStorage(NotificationManager.dailyReminderKey) private var dailyReminderEnabled = false
     @AppStorage(NotificationManager.weeklySummaryKey) private var weeklySummaryEnabled = false
     private let purchases = PurchaseManager.shared
+    #if os(iOS)
+    @State private var pushAuthStatus: UNAuthorizationStatus = .notDetermined
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -296,6 +300,39 @@ struct AccountView: View {
                             .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
 
                             VStack(spacing: 0) {
+                                #if os(iOS)
+                                Button {
+                                    if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.teal.opacity(0.15))
+                                                .frame(width: 34, height: 34)
+                                            Image(systemName: "bell.badge.fill")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(.teal)
+                                        }
+                                        .accessibilityHidden(true)
+                                        Text("Push Notifications")
+                                            .foregroundStyle(.primary)
+                                        Spacer()
+                                        Text(pushStatusLabel)
+                                            .font(.subheadline)
+                                            .foregroundStyle(pushStatusColor)
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 12)
+                                }
+                                .buttonStyle(.plain)
+                                Divider().padding(.leading, 62)
+                                #endif
+
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 8)
@@ -525,7 +562,29 @@ struct AccountView: View {
     private func loadEmail() async {
         userEmail = (try? await supabase.auth.user())?.email ?? ""
         await checkStripeStatus()
+        #if os(iOS)
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        pushAuthStatus = settings.authorizationStatus
+        #endif
     }
+
+    #if os(iOS)
+    private var pushStatusLabel: String {
+        switch pushAuthStatus {
+        case .authorized, .provisional, .ephemeral: return "On"
+        case .denied: return "Off"
+        default: return "Set Up"
+        }
+    }
+
+    private var pushStatusColor: Color {
+        switch pushAuthStatus {
+        case .authorized, .provisional, .ephemeral: return .green
+        case .denied: return .red
+        default: return .secondary
+        }
+    }
+    #endif
 
     private func checkStripeStatus() async {
         struct ConnectRow: Decodable { let onboarded: Bool }
@@ -560,7 +619,11 @@ struct AccountView: View {
             return
         }
         stripeConnecting = false
+        #if os(iOS)
         await UIApplication.shared.open(onboardingURL)
+        #else
+        NSWorkspace.shared.open(onboardingURL)
+        #endif
     }
 
     private func disconnectStripe() async {

@@ -54,7 +54,7 @@ struct TaskNoteSheet: View {
                 .font(.subheadline)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Capsule().fill(Color(.secondarySystemBackground)))
+                .background(Capsule().fill(Color.secondaryBackground))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Session complete: \(client), \(TimeFormatter.accessibleFormat(hours))")
 
@@ -83,7 +83,7 @@ struct TaskNoteSheet: View {
             // Text area
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(Color.secondaryBackground)
 
                 if noteText.isEmpty {
                     Text("e.g. Built login screen, fixed API bug...")
@@ -127,7 +127,7 @@ struct TaskNoteSheet: View {
                         #if !os(visionOS)
                         .foregroundStyle(.secondary)
                         .padding()
-                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(.secondarySystemBackground)))
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color.secondaryBackground))
                         #endif
                 }
                 #if os(visionOS)

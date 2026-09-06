@@ -91,13 +91,20 @@ struct ExportOptionsView: View {
                 }
             }
             .navigationTitle("Export Hours")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
             }
         }
+        #if os(iOS)
         .presentationBackground(Color(uiColor: .systemGroupedBackground))
+        #endif
     }
 }

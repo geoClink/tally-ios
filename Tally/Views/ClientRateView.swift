@@ -87,6 +87,9 @@ struct ClientRateView: View {
                 }
             }
             .navigationTitle("Client Settings")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

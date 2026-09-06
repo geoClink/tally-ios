@@ -16,6 +16,7 @@ class ErrorHandler {
     var showError = false
     
     func handle(_ error: Error, context: String = "") {
+        if error is CancellationError { return }
         let message = context.isEmpty ? error.localizedDescription : "\(context): \(error.localizedDescription)"
         currentError = message
         showError = true

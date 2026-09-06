@@ -240,11 +240,15 @@ struct ReportsView: View {
                         showExportOptions = false
                     }
                 )
+                #if os(iOS)
                 .presentationDetents([.large])
+                #endif
             }
+            #if os(iOS)
             .sheet(isPresented: $showShareSheet) {
                 if let url = exportURL { ShareSheet(url: url) }
             }
+            #endif
             .sheet(isPresented: $showPaywall) { PaywallView() }
             .sheet(item: $logAgainSession) { session in
                 ManualEntryView(prefillClient: session.client, prefillNote: session.taskNote ?? "")
@@ -567,7 +571,9 @@ struct ReportsView: View {
                     .tracking(0.5)
                     .textCase(.uppercase)
             }
+            #if os(iOS)
             .listSectionSpacing(.compact)
+            #endif
         }
         .scrollContentBackground(.hidden)
     }

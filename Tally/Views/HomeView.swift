@@ -36,7 +36,13 @@ struct HomeView: View {
         }
     }
 
-    private var isMac: Bool { ProcessInfo.processInfo.isiOSAppOnMac }
+    private var isMac: Bool {
+        #if os(macOS)
+        return true
+        #else
+        return false
+        #endif
+    }
 
     private var timerFontSize: CGFloat {
         if isMac { return 56 }
@@ -153,9 +159,11 @@ struct HomeView: View {
                     viewModel.start(client: selectedClient)
                     showClientPicker = false
                 }
+                #if os(iOS)
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(.systemBackground))
+                #endif
             }
             .sheet(isPresented: $showManualEntry) { ManualEntryView() }
             .sheet(isPresented: $showGoalSetting) { GoalSettingView() }
@@ -176,35 +184,13 @@ struct HomeView: View {
                     hours: $pendingHours,
                     noteText: $taskNoteText,
                     isBillable: $pendingBillable,
-                    onSkip: {
-                        Task {
-                            await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: nil, isBillable: pendingBillable)
-                            taskNoteText = ""
-                            pendingBillable = true
-                            showTaskNote = false
-                            maybeRequestReview()
-                            try? await Task.sleep(for: .seconds(0.5))
-                            withAnimation(.spring(duration: 0.3)) { showSavedFlash = true }
-                            try? await Task.sleep(for: .seconds(1.2))
-                            withAnimation(.easeOut(duration: 0.4)) { showSavedFlash = false }
-                        }
-                    },
-                    onSave: {
-                        Task {
-                            await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: taskNoteText.isEmpty ? nil : taskNoteText, isBillable: pendingBillable)
-                            taskNoteText = ""
-                            pendingBillable = true
-                            showTaskNote = false
-                            maybeRequestReview()
-                            try? await Task.sleep(for: .seconds(0.5))
-                            withAnimation(.spring(duration: 0.3)) { showSavedFlash = true }
-                            try? await Task.sleep(for: .seconds(1.2))
-                            withAnimation(.easeOut(duration: 0.4)) { showSavedFlash = false }
-                        }
-                    }
+                    onSkip: { Task { await saveSession(taskNote: nil) } },
+                    onSave: { Task { await saveSession(taskNote: taskNoteText.isEmpty ? nil : taskNoteText) } }
                 )
+                #if os(iOS)
                 .presentationDetents([.medium])
                 .presentationBackground(Color(.systemBackground))
+                #endif
             }
         }
     }
@@ -436,6 +422,7 @@ struct HomeView: View {
     // MARK: - Helpers
 
     private func checkPendingIntents() {
+        #if os(iOS)
         if let client = AppGroupStore.pendingStartClient(), !viewModel.isRunning {
             AppGroupStore.clearPendingIntents()
             viewModel.start(client: client)
@@ -447,12 +434,27 @@ struct HomeView: View {
             // Timer was started via Siri while app was suspended in memory — resume it.
             viewModel.start(client: state.client)
         }
+        #endif
+    }
+
+    private func saveSession(taskNote: String?) async {
+        await tallyStore.addSession(client: selectedClient, hours: pendingHours, taskNote: taskNote, isBillable: pendingBillable)
+        taskNoteText = ""
+        pendingBillable = true
+        showTaskNote = false
+        maybeRequestReview()
+        try? await Task.sleep(for: .seconds(0.5))
+        withAnimation(.spring(duration: 0.3)) { showSavedFlash = true }
+        try? await Task.sleep(for: .seconds(1.2))
+        withAnimation(.easeOut(duration: 0.4)) { showSavedFlash = false }
     }
 
     private func applyFocusFilter() async {
+        #if os(iOS)
         guard let filter = try? await TallyFocusFilterIntent.current,
               let client = filter.client, !client.isEmpty else { return }
         selectedClient = client
+        #endif
     }
 
     private func maybeRequestReview() {

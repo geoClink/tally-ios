@@ -154,6 +154,9 @@ struct ManualEntryView: View {
                 }
             }
             .navigationTitle(existingSession != nil ? "Edit Session" : "Log Hours")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

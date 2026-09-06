@@ -24,10 +24,14 @@ struct ContactEmailSheet: View {
             Form {
                 Section {
                     TextField("your@email.com", text: $email)
+                        #if os(iOS)
                         .keyboardType(.emailAddress)
+                        #endif
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
+                        #if os(iOS)
                         .textInputAutocapitalization(.never)
+                        #endif
                 } header: {
                     Text("Contact Email")
                 } footer: {
@@ -41,7 +45,12 @@ struct ContactEmailSheet: View {
                 }
             }
             .navigationTitle("Contact Email")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

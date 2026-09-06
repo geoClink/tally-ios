@@ -13,6 +13,7 @@ struct CalendarView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedMonth = Date()
     @State private var selectedDate: Date? = Date()
+    @State private var expandedSessionId: UUID?
 
     private var captionColor: Color {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
@@ -286,7 +287,10 @@ struct CalendarView: View {
                                 .fill(isSelected ? Color.blue : (isToday ? Color.blue.opacity(0.1) : Color.clear))
                         )
                         .contentShape(Rectangle())
-                        .onTapGesture { selectedDate = date }
+                        .onTapGesture {
+                            selectedDate = date
+                            expandedSessionId = nil
+                        }
                         .accessibilityLabel(h > 0 ? "\(calendar.component(.day, from: date)), \(TimeFormatter.shortFormat(h)) logged" : "\(calendar.component(.day, from: date))")
                         .accessibilityAddTraits(isSelected ? .isSelected : [])
                     } else {
@@ -344,22 +348,74 @@ struct CalendarView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List(daySessions) { session in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(session.client)
-                                    .font(.body)
-                                if session.isManual {
-                                    Text("Manual entry")
-                                        .font(.caption)
-                                        .foregroundStyle(captionColor)
+                        let isExpanded = expandedSessionId == session.id
+                        let hasNote = session.taskNote != nil && !session.taskNote!.isEmpty
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                expandedSessionId = isExpanded ? nil : session.id
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(session.client)
+                                            .font(.body)
+                                            .foregroundStyle(.primary)
+                                        if !isExpanded {
+                                            if let note = session.taskNote, !note.isEmpty {
+                                                Text(note)
+                                                    .font(.caption)
+                                                    .foregroundStyle(captionColor)
+                                                    .lineLimit(1)
+                                            } else if session.isManual {
+                                                Text("Manual entry")
+                                                    .font(.caption)
+                                                    .foregroundStyle(captionColor)
+                                            }
+                                        }
+                                    }
+                                    Spacer()
+                                    Text(TimeFormatter.shortFormat(session.hours))
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.secondary)
+                                    if hasNote {
+                                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+
+                                if isExpanded {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        if let note = session.taskNote, !note.isEmpty {
+                                            Text(note)
+                                                .font(.subheadline)
+                                                .foregroundStyle(.primary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        } else {
+                                            Text("No notes for this session.")
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        if session.isManual {
+                                            Text("Manual entry")
+                                                .font(.caption)
+                                                .foregroundStyle(captionColor)
+                                        }
+                                        if session.isBillable {
+                                            Label("Billable", systemImage: "dollarsign.circle.fill")
+                                                .font(.caption)
+                                                .foregroundStyle(.green)
+                                        }
+                                    }
+                                    .padding(.top, 4)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
                             }
-                            Spacer()
-                            Text(TimeFormatter.shortFormat(session.hours))
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.secondary)
                         }
+                        .buttonStyle(.plain)
                     }
                     .listStyle(.plain)
                 }

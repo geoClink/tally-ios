@@ -429,7 +429,9 @@ struct WorkspaceDetailView: View {
         .scrollContentBackground(.hidden)
         } // ZStack
         .navigationTitle(workspace.name)
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        #endif
         .toolbar {
             if isOwner && purchases.hasTeamWorkspaces {
                 ToolbarItem(placement: .primaryAction) {
@@ -624,7 +626,9 @@ private struct CreateWorkspaceSheet: View {
 
                 Section {
                     TextField("e.g. 80", text: $goalText)
+                        #if os(iOS)
                         .keyboardType(.decimalPad)
+                        #endif
                         .onChange(of: goalText) { _, val in weeklyGoal = Double(val) ?? 0 }
                 } header: {
                     Text("Weekly Hour Goal (optional)")
@@ -633,6 +637,9 @@ private struct CreateWorkspaceSheet: View {
                 }
             }
             .navigationTitle("New Workspace")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -641,7 +648,9 @@ private struct CreateWorkspaceSheet: View {
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium])
+        #endif
     }
 }
 
@@ -663,14 +672,18 @@ private struct InviteMemberSheet: View {
                 }
             }
             .navigationTitle("Invite Member")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium])
+        #endif
     }
 
     private var formView: some View {
@@ -709,7 +722,7 @@ private struct InviteMemberSheet: View {
                     .textContentType(.emailAddress)
                     #endif
                     .padding(12)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color.secondaryBackground, in: RoundedRectangle(cornerRadius: 10))
             }
             .padding(.horizontal, 24)
 
@@ -828,7 +841,9 @@ private struct EditWorkspaceSheet: View {
 
                 Section {
                     TextField("e.g. 80", text: $goalText)
+                        #if os(iOS)
                         .keyboardType(.decimalPad)
+                        #endif
                 } header: {
                     Text("Weekly Hour Goal (optional)")
                 } footer: {
@@ -836,6 +851,9 @@ private struct EditWorkspaceSheet: View {
                 }
             }
             .navigationTitle("Edit Workspace")
+            #if os(macOS)
+            .formStyle(.grouped)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -844,6 +862,8 @@ private struct EditWorkspaceSheet: View {
                 }
             }
         }
+        #if os(iOS)
         .presentationDetents([.medium])
+        #endif
     }
 }

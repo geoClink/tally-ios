@@ -121,6 +121,9 @@ struct ContentView: View {
         isLoading = false
         if isAuthenticated {
             Task { await PurchaseManager.shared.refresh() }
+            #if os(iOS) || os(macOS)
+            PushNotificationManager.shared.requestPermissionAndRegister()
+            #endif
         }
     }
 }
