@@ -119,6 +119,21 @@ struct TaskNoteSheet: View {
             .padding(.bottom, 12)
 
             // Actions
+            #if os(macOS)
+            HStack {
+                Spacer()
+                Button("Skip", action: onSkip)
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityHint("Saves session without adding a note")
+                Button("Save Note", action: onSave)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(noteText.isEmpty)
+                    .accessibilityHint(noteText.isEmpty ? "Saves session without a note" : "Saves your note with this session")
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 20)
+            #else
             HStack(spacing: 12) {
                 Button(action: onSkip) {
                     Text("Skip")
@@ -155,6 +170,7 @@ struct TaskNoteSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
+            #endif
         }
         .onAppear { }
         .interactiveDismissDisabled(true)
