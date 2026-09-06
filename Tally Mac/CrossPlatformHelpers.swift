@@ -1,0 +1,4 @@
+//
+//  CrossPlatformHelpers.swift
+//  Tally Mac
+//

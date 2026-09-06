@@ -2,16 +2,20 @@
 //  Tally_MacApp.swift
 //  Tally Mac
 //
-//  Created by George Clinkscales on 9/6/26.
-//
 
 import SwiftUI
 
 @main
 struct Tally_MacApp: App {
+    @State private var tallyStore = TallyStore()
+    @State private var timerViewModel = TimerViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MacContentView()
+                .environment(tallyStore)
+                .environment(timerViewModel)
         }
+        .defaultSize(width: 900, height: 650)
     }
 }

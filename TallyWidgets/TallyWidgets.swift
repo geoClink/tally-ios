@@ -14,9 +14,10 @@ struct TallyWidgetEntry: TimelineEntry {
     var weeklyHours: Double
     var weeklyGoal: Double
     var topClient: String
+    var weeklyEarnings: Double
 
     static var placeholder: TallyWidgetEntry {
-        TallyWidgetEntry(date: .now, todayHours: 3.5, weeklyHours: 14.0, weeklyGoal: 40.0, topClient: "tripsetta")
+        TallyWidgetEntry(date: .now, todayHours: 3.5, weeklyHours: 14.0, weeklyGoal: 40.0, topClient: "tripsetta", weeklyEarnings: 0)
     }
 
     static var fromAppGroup: TallyWidgetEntry {
@@ -26,7 +27,8 @@ struct TallyWidgetEntry: TimelineEntry {
             todayHours: d.double(forKey: AppGroupKey.todayHours),
             weeklyHours: d.double(forKey: AppGroupKey.weeklyHours),
             weeklyGoal: max(d.double(forKey: AppGroupKey.weeklyGoal), 1),
-            topClient: d.string(forKey: AppGroupKey.topClientToday) ?? "--"
+            topClient: d.string(forKey: AppGroupKey.topClientToday) ?? "--",
+            weeklyEarnings: d.double(forKey: AppGroupKey.weeklyEarnings)
         )
     }
 }
@@ -156,6 +158,12 @@ struct TallyMediumWidgetView: View {
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
+                    if entry.weeklyEarnings > 0 {
+                        Text(entry.weeklyEarnings, format: .currency(code: "USD"))
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
 
                 ProgressView(value: progress)
