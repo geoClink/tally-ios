@@ -664,6 +664,7 @@ private struct ClientSettingsList: View {
             TipView(tip)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
             if tallyStore.clientRates.isEmpty {
                 VStack(spacing: 12) {
@@ -714,7 +715,7 @@ private struct ClientSettingsList: View {
                 .buttonStyle(.plain)
             }
         }
-        .navigationTitle("Client Rates")
+        .navigationTitle("Clients")
         .task { await tallyStore.loadClientRates() }
         .sheet(item: Binding(
             get: { selectedClient.map { ClientID(id: $0) } },
