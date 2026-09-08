@@ -78,7 +78,11 @@ struct ClientPickerView: View {
                                         .stroke(selectedClient == client ? Color.blue.opacity(0.4) : Color.clear, lineWidth: 1.5)
                                 )
                             }
+                            #if os(visionOS)
+                            .buttonStyle(.borderless)
+                            #else
                             .buttonStyle(.plain)
+                            #endif
                             .accessibilityLabel(client)
                             .accessibilityHint(selectedClient == client ? "Selected" : "Tap to select \(client)")
                             .accessibilityAddTraits(selectedClient == client ? .isSelected : [])
@@ -107,7 +111,11 @@ struct ClientPickerView: View {
                                         .background(RoundedRectangle(cornerRadius: 10).fill(Color.secondaryBackground))
                                         .foregroundStyle(.primary)
                                 }
+                                #if os(visionOS)
+                                .buttonStyle(.borderless)
+                                #else
                                 .buttonStyle(.plain)
+                                #endif
                             }
                         }
                     }
@@ -141,7 +149,11 @@ struct ClientPickerView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(Color.purple))
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderless)
+                #else
                 .buttonStyle(.plain)
+                #endif
                 .popoverTip(clientLimitTip)
             } else {
                 Button {
@@ -157,7 +169,11 @@ struct ClientPickerView: View {
                                 .fill(canStart ? Color.green : Color.gray.opacity(0.4))
                         )
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderless)
+                #else
                 .buttonStyle(.plain)
+                #endif
                 .disabled(!canStart)
                 .accessibilityLabel("Start Tally")
                 .accessibilityHint(canStart ? "Starts timer for \(selectedClient)" : "Select or type a client name first")

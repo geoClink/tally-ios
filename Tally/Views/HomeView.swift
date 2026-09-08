@@ -372,9 +372,13 @@ struct HomeView: View {
                             .offset(x: 3) // optical center for play icon
                     }
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderless)
+                .hoverEffect(.highlight)
+                #else
                 .buttonStyle(.plain)
                 .contentShape(Circle())
-                .hoverEffect()
+                #endif
                 .accessibilityLabel("Start timer")
                 .accessibilityHint("Opens client picker to begin tracking time")
 
@@ -404,7 +408,11 @@ struct HomeView: View {
                                 .fill(viewModel.isPaused ? Color.blue : accessibleOrange)
                         )
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderless)
+                #else
                 .buttonStyle(.plain)
+                #endif
                 .accessibilityLabel(viewModel.isPaused ? "Resume timer" : "Pause timer")
 
                 Button {
@@ -422,7 +430,11 @@ struct HomeView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(accessibleRed))
                 }
+                #if os(visionOS)
+                .buttonStyle(.borderless)
+                #else
                 .buttonStyle(.plain)
+                #endif
                 .accessibilityLabel("Stop timer")
                 .accessibilityHint("Stops and saves the current session for \(viewModel.activeClient)")
             }
