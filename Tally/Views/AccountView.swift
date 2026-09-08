@@ -671,6 +671,7 @@ private struct ClientSettingsList: View {
                     Image(systemName: "person.2.slash")
                         .font(.system(size: 36))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text("No client rates yet")
                         .font(.headline)
                     Text("Go to the Clients tab and tap a client to set their hourly rate and billing cycle.")
@@ -681,6 +682,7 @@ private struct ClientSettingsList: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
                 .listRowBackground(Color.clear)
+                .accessibilityElement(children: .combine)
             }
             ForEach(tallyStore.clientRates, id: \.client) { rate in
                 Button {
@@ -710,9 +712,22 @@ private struct ClientSettingsList: View {
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel({
+                    let rateStr = rate.hourlyRate.formatted(.currency(code: CurrencyPreference.current))
+                    if let cycle = rate.billingCycle, cycle == "weekly", let weekday = rate.billingWeekday {
+                        let days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+                        return "\(rate.client), \(rateStr) per hour, bills every \(days[weekday])"
+                    } else if let day = rate.billingStartDay {
+                        let suffix = day == 1 || day == 21 ? "st" : day == 2 || day == 22 ? "nd" : day == 3 || day == 23 ? "rd" : "th"
+                        return "\(rate.client), \(rateStr) per hour, bills from the \(day)\(suffix)"
+                    }
+                    return "\(rate.client), \(rateStr) per hour"
+                }())
+                .accessibilityHint("Tap to edit rate and billing cycle")
             }
         }
         .navigationTitle("Clients")

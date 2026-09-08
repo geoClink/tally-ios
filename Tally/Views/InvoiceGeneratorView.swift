@@ -264,6 +264,13 @@ struct InvoiceGeneratorView: View {
             }
         }
         .disabled(yourName.isEmpty || hourlyRate == 0 || filteredSessions.isEmpty)
+        .accessibilityLabel("Download invoice as PDF")
+        .accessibilityHint(
+            yourName.isEmpty ? "Enter your name above to enable" :
+            hourlyRate == 0 ? "Set an hourly rate to enable" :
+            filteredSessions.isEmpty ? "No sessions in the selected period" :
+            "Generates and opens a PDF invoice"
+        )
     }
 
     private var stripeButton: some View {
@@ -283,6 +290,12 @@ struct InvoiceGeneratorView: View {
         }
         .tint(.blue)
         .disabled(hourlyRate == 0 || filteredSessions.isEmpty || isSendingStripe)
+        .accessibilityLabel("Send invoice via Stripe")
+        .accessibilityHint(
+            hourlyRate == 0 ? "Set an hourly rate to enable" :
+            filteredSessions.isEmpty ? "No sessions in the selected period" :
+            "Sends a Stripe invoice to the client email"
+        )
     }
 
     // MARK: - Actions
