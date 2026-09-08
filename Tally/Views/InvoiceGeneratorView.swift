@@ -148,8 +148,12 @@ struct InvoiceGeneratorView: View {
                     }
                     HStack {
                         Text("Total hours")
+                            .lineLimit(1)
                         Spacer()
-                        Text(TimeFormatter.shortFormat(totalHours)).foregroundStyle(.secondary)
+                        Text(TimeFormatter.shortFormat(totalHours))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                     if taxRate > 0 {
                         HStack {
