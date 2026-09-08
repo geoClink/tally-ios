@@ -32,19 +32,33 @@ struct InvoiceGeneratorView: View {
     private let purchases = PurchaseManager.shared
 
     private var billingRange: (start: Date, end: Date)? {
-        guard selectedRange == .lastBillingPeriod,
-              let startDay = tallyStore.billingStartDay(for: client) else { return nil }
+        guard selectedRange == .lastBillingPeriod else { return nil }
         let cal = Calendar.current
         let now = Date()
-        var comps = cal.dateComponents([.year, .month], from: now)
-        comps.day = startDay
-        let currentStart = cal.date(from: comps) ?? now
-        let adjustedCurrentStart = currentStart > now
-            ? cal.date(byAdding: .month, value: -1, to: currentStart) ?? currentStart
-            : currentStart
-        let lastStart = cal.date(byAdding: .month, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
-        let lastEnd = cal.date(byAdding: .day, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
-        return (lastStart, lastEnd)
+        let cycle = tallyStore.billingCycle(for: client)
+
+        if cycle == "weekly", let weekday = tallyStore.billingWeekday(for: client) {
+            // Calendar weekday: 1=Sun … 7=Sat; our weekday: 0=Sun … 6=Sat
+            let target = weekday + 1
+            let today = cal.component(.weekday, from: now)
+            let daysBack = (today - target + 7) % 7
+            let currentStart = cal.date(byAdding: .day, value: -daysBack, to: cal.startOfDay(for: now)) ?? now
+            let lastStart = cal.date(byAdding: .weekOfYear, value: -1, to: currentStart) ?? currentStart
+            let lastEnd = cal.date(byAdding: .day, value: -1, to: currentStart) ?? currentStart
+            return (lastStart, lastEnd)
+        } else if let startDay = tallyStore.billingStartDay(for: client) {
+            var comps = cal.dateComponents([.year, .month], from: now)
+            comps.day = startDay
+            let currentStart = cal.date(from: comps) ?? now
+            let adjustedCurrentStart = currentStart > now
+                ? cal.date(byAdding: .month, value: -1, to: currentStart) ?? currentStart
+                : currentStart
+            let lastStart = cal.date(byAdding: .month, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
+            let lastEnd = cal.date(byAdding: .day, value: -1, to: adjustedCurrentStart) ?? adjustedCurrentStart
+            return (lastStart, lastEnd)
+        }
+
+        return nil
     }
 
     private var filteredSessions: [SessionModel] {
@@ -211,7 +225,7 @@ struct InvoiceGeneratorView: View {
             .task {
                 await tallyStore.loadClientRates()
                 clientEmail = tallyStore.clientEmail(for: client)
-                yourName = tallyStore.contactEmail ?? ""
+                yourEmail = tallyStore.contactEmail ?? ""
                 await checkStripeConnected()
             }
             .sheet(isPresented: $showRatePicker) {
