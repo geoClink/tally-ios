@@ -392,6 +392,20 @@ struct AccountView: View {
                             }
                         }
 
+                        // Clients section
+                        VStack(spacing: 0) {
+                            sectionHeader("Clients")
+                            VStack(spacing: 0) {
+                                NavigationLink {
+                                    ClientSettingsList()
+                                } label: {
+                                    accountRow(icon: "person.2.fill", iconColor: .green, label: "Client Rates & Billing", trailing: nil, isAction: true)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
+                        }
+
                         // Support section
                         VStack(spacing: 0) {
                             sectionHeader("Support")
@@ -637,4 +651,64 @@ struct AccountView: View {
         _ = try? await URLSession.shared.data(for: request)
         stripeConnected = false
     }
+}
+
+private struct ClientSettingsList: View {
+    @Environment(TallyStore.self) var tallyStore
+    @State private var selectedClient: String?
+
+    var body: some View {
+        List {
+            if tallyStore.clientRates.isEmpty {
+                ContentUnavailableView(
+                    "No Client Rates",
+                    systemImage: "person.2",
+                    description: Text("Add a client rate from the Clients tab.")
+                )
+                .listRowBackground(Color.clear)
+            }
+            ForEach(tallyStore.clientRates, id: \.client) { rate in
+                Button {
+                    selectedClient = rate.client
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(rate.client)
+                                .foregroundStyle(.primary)
+                            if let cycle = rate.billingCycle {
+                                if cycle == "weekly", let weekday = rate.billingWeekday {
+                                    let days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+                                    Text("Bills every \(days[weekday])")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else if let day = rate.billingStartDay {
+                                    let suffix = day == 1 || day == 21 ? "st" : day == 2 || day == 22 ? "nd" : day == 3 || day == 23 ? "rd" : "th"
+                                    Text("Bills from the \(day)\(suffix)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        Spacer()
+                        Text(rate.hourlyRate.formatted(.currency(code: CurrencyPreference.current)))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .navigationTitle("Client Rates")
+        .task { await tallyStore.loadClientRates() }
+        .sheet(item: Binding(
+            get: { selectedClient.map { ClientID(id: $0) } },
+            set: { selectedClient = $0?.id }
+        )) { item in
+            ClientRateView(client: item.id)
+        }
+    }
+
+    private struct ClientID: Identifiable { let id: String }
 }

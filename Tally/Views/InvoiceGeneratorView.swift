@@ -15,7 +15,7 @@ struct InvoiceGeneratorView: View {
 
     @State private var selectedRange: ExportRange = .thisMonth
     @State private var invoiceNumber: String = "001"
-    @State private var yourName: String = ""
+    @AppStorage("invoice_your_name") private var yourName: String = ""
     @State private var yourEmail: String = ""
     @State private var notes: String = ""
     @State private var showRatePicker = false
