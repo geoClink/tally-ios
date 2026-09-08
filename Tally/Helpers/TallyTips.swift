@@ -55,7 +55,15 @@ struct StartTimerTip: Tip {
 struct BillingPeriodTip: Tip {
     var title: Text { Text("Track by billing cycle") }
     var message: Text? {
-        Text("Set a billing start day to view this client's hours by billing period in Reports — useful when you bill on a custom schedule.")
+        Text("Set a monthly start day or a weekly weekday. Tally will group this client's hours by billing period in Reports and pre-fill invoice date ranges automatically.")
     }
     var image: Image? { Image(systemName: "calendar.badge.clock") }
+}
+
+struct ClientSettingsTip: Tip {
+    var title: Text { Text("Set rates & billing cycles") }
+    var message: Text? {
+        Text("Tap any client to set their hourly rate, project budget, and billing cycle. Tally uses this to pre-fill invoices and group hours in Reports.")
+    }
+    var image: Image? { Image(systemName: "person.text.rectangle") }
 }

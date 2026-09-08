@@ -6,6 +6,7 @@
 import SwiftUI
 import StoreKit
 import Supabase
+import TipKit
 import UserNotifications
 
 struct AccountView: View {
@@ -656,15 +657,28 @@ struct AccountView: View {
 private struct ClientSettingsList: View {
     @Environment(TallyStore.self) var tallyStore
     @State private var selectedClient: String?
+    private let tip = ClientSettingsTip()
 
     var body: some View {
         List {
+            TipView(tip)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+
             if tallyStore.clientRates.isEmpty {
-                ContentUnavailableView(
-                    "No Client Rates",
-                    systemImage: "person.2",
-                    description: Text("Add a client rate from the Clients tab.")
-                )
+                VStack(spacing: 12) {
+                    Image(systemName: "person.2.slash")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary)
+                    Text("No client rates yet")
+                        .font(.headline)
+                    Text("Go to the Clients tab and tap a client to set their hourly rate and billing cycle.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
                 .listRowBackground(Color.clear)
             }
             ForEach(tallyStore.clientRates, id: \.client) { rate in
