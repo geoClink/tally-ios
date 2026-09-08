@@ -77,9 +77,18 @@ struct HomeView: View {
     @State private var pendingHours: Double = 0
     @State private var pendingBillable: Bool = true
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     var body: some View {
-        NavigationStack {
-            ZStack {
+        if horizontalSizeClass == .compact {
+            NavigationStack { mainContent }
+        } else {
+            mainContent
+        }
+    }
+
+    private var mainContent: some View {
+        ZStack {
                 // Decorative background circles
                 GeometryReader { geo in
                     ZStack {
@@ -97,6 +106,7 @@ struct HomeView: View {
                     }
                 }
                 .ignoresSafeArea()
+                .allowsHitTesting(false)
 
                 VStack(spacing: 0) {
                     Spacer().frame(maxHeight: isMac ? 40 : .infinity)
@@ -192,7 +202,6 @@ struct HomeView: View {
                 .presentationBackground(Color(.systemBackground))
                 #endif
             }
-        }
     }
 
     // MARK: - Subviews
@@ -364,6 +373,8 @@ struct HomeView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .contentShape(Circle())
+                .hoverEffect()
                 .accessibilityLabel("Start timer")
                 .accessibilityHint("Opens client picker to begin tracking time")
 

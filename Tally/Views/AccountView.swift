@@ -619,7 +619,7 @@ struct AccountView: View {
             return
         }
         stripeConnecting = false
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         await UIApplication.shared.open(onboardingURL)
         #else
         NSWorkspace.shared.open(onboardingURL)

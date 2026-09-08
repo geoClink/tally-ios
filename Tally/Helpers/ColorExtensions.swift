@@ -7,7 +7,7 @@ import SwiftUI
 
 extension Color {
     static var secondaryBackground: Color {
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         Color(uiColor: .secondarySystemBackground)
         #else
         Color(nsColor: .windowBackgroundColor)

@@ -93,8 +93,16 @@ class TallyStore {
         clientRates.first { $0.client == client }?.budgetHours
     }
 
+    func billingCycle(for client: String) -> String {
+        clientRates.first { $0.client == client }?.billingCycle ?? "monthly"
+    }
+
     func billingStartDay(for client: String) -> Int? {
         clientRates.first { $0.client == client }?.billingStartDay
+    }
+
+    func billingWeekday(for client: String) -> Int? {
+        clientRates.first { $0.client == client }?.billingWeekday
     }
 
     func billingPeriodStart(startDay: Int) -> Date {
@@ -109,7 +117,22 @@ class TallyStore {
         return calendar.date(from: components) ?? now
     }
 
+    func weeklyBillingPeriodStart(weekday: Int) -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let todayWeekday = calendar.component(.weekday, from: now) - 1 // 0=Sun
+        let diff = (todayWeekday - weekday + 7) % 7
+        return calendar.date(byAdding: .day, value: -diff, to: calendar.startOfDay(for: now)) ?? now
+    }
+
     func billingPeriodHours(client: String) -> Double {
+        let cycle = billingCycle(for: client)
+        if cycle == "weekly", let weekday = billingWeekday(for: client) {
+            let start = weeklyBillingPeriodStart(weekday: weekday)
+            return sessions
+                .filter { $0.client == client && $0.startTime >= start }
+                .reduce(0) { $0 + $1.hours }
+        }
         guard let startDay = billingStartDay(for: client) else { return 0 }
         let start = billingPeriodStart(startDay: startDay)
         return sessions
@@ -154,7 +177,7 @@ class TallyStore {
         }
     }
     
-    func saveClientRate(client: String, hourlyRate: Double, budgetHours: Double? = nil, billingStartDay: Int? = nil) async {
+    func saveClientRate(client: String, hourlyRate: Double, budgetHours: Double? = nil, billingCycle: String = "monthly", billingStartDay: Int? = nil, billingWeekday: Int? = nil) async {
         guard let user = try? await supabase.auth.user() else { return }
         do {
             let rate = ClientRateInsert(
@@ -162,7 +185,9 @@ class TallyStore {
                 client: client,
                 hourlyRate: hourlyRate,
                 budgetHours: budgetHours,
-                billingStartDay: billingStartDay
+                billingCycle: billingCycle,
+                billingStartDay: billingCycle == "monthly" ? billingStartDay : nil,
+                billingWeekday: billingCycle == "weekly" ? billingWeekday : nil
             )
             try await supabase
                 .from("client_rates")

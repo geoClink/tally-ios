@@ -284,7 +284,7 @@ struct InvoiceGeneratorView: View {
         isGenerating = false
         if let url = generatedURL {
             await saveInvoiceRecord(status: "draft")
-            #if os(iOS)
+            #if os(iOS) || os(visionOS)
             showShareSheet = true
             #else
             NSWorkspace.shared.open(url)

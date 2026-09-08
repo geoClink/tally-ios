@@ -9,7 +9,7 @@ import SwiftUI
 import Supabase
 import AuthenticationServices
 import CryptoKit
-#if !os(visionOS)
+#if os(iOS)
 import GoogleSignIn
 #endif
 
@@ -204,7 +204,7 @@ struct AuthView: View {
 
                 // Social sign-in — both buttons at Google's native 44pt height
                 VStack(spacing: 12) {
-                    #if !os(visionOS)
+                    #if os(iOS)
                     Button {
                         Task { await handleGoogleSignIn() }
                     } label: {
@@ -240,7 +240,7 @@ struct AuthView: View {
     }
 
     private func handleGoogleSignIn() async {
-        #if !os(visionOS)
+        #if os(iOS)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
             errorMessage = "Unable to present Google Sign-In."
