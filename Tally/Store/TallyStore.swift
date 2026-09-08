@@ -191,7 +191,7 @@ class TallyStore {
             )
             try await supabase
                 .from("client_rates")
-                .upsert(rate)
+                .upsert(rate, onConflict: "user_id,client")
                 .execute()
             await loadClientRates()
         } catch {
