@@ -408,6 +408,7 @@ struct HomeView: View {
                     Label(viewModel.isPaused ? "Resume" : "Pause",
                           systemImage: viewModel.isPaused ? "play.fill" : "pause.fill")
                         .font(.headline)
+                        #if !os(visionOS)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -415,9 +416,12 @@ struct HomeView: View {
                             RoundedRectangle(cornerRadius: 14)
                                 .fill(viewModel.isPaused ? Color.blue : accessibleOrange)
                         )
+                        #endif
                 }
                 #if os(visionOS)
-                .buttonStyle(.borderless)
+                .buttonStyle(.borderedProminent)
+                .tint(viewModel.isPaused ? .blue : .orange)
+                .controlSize(.large)
                 #else
                 .buttonStyle(.plain)
                 #endif
@@ -433,13 +437,17 @@ struct HomeView: View {
                 } label: {
                     Label("Stop", systemImage: "stop.fill")
                         .font(.headline)
+                        #if !os(visionOS)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14).fill(accessibleRed))
+                        #endif
                 }
                 #if os(visionOS)
-                .buttonStyle(.borderless)
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .controlSize(.large)
                 #else
                 .buttonStyle(.plain)
                 #endif
