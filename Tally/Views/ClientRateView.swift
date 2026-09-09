@@ -16,7 +16,7 @@ struct ClientRateView: View {
     @State private var rateText: String = ""
     @State private var budgetText: String = ""
     @State private var billingCycle: String = "monthly"
-    @State private var billingStartDayText: String = ""
+    @State private var billingStartDay: Int = 0
     @State private var billingWeekday: Int = 1 // Monday default
     private let billingTip = BillingPeriodTip()
 
@@ -26,16 +26,20 @@ struct ClientRateView: View {
         NavigationStack {
             Form {
                 Section("Hourly Rate for \(client)") {
+                    #if os(macOS)
+                    TextField("$ 0.00", text: $rateText)
+                        .accessibilityLabel("Hourly rate")
+                        .accessibilityHint("Enter your hourly rate for \(client)")
+                    #else
                     HStack {
                         Text("$")
                             .foregroundStyle(.secondary)
                         TextField("0.00", text: $rateText)
-                            #if os(iOS)
                             .keyboardType(.decimalPad)
-                            #endif
                             .accessibilityLabel("Hourly rate")
                             .accessibilityHint("Enter your hourly rate for \(client)")
                     }
+                    #endif
 
                     if let rate = Double(rateText), rate > 0 {
                         Text("At \(rate.formatted(.currency(code: CurrencyPreference.current))) per hour")
@@ -74,22 +78,10 @@ struct ClientRateView: View {
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
 
                     if billingCycle == "monthly" {
-                        HStack {
-                            Text("Billing start day")
-                            Spacer()
-                            TextField("None", text: $billingStartDayText)
-                                #if os(iOS)
-                                .keyboardType(.numberPad)
-                                #endif
-                                .multilineTextAlignment(.trailing)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 60)
-                                .accessibilityLabel("Billing start day")
-                                .accessibilityHint("Day of the month your billing cycle begins, 1 to 28")
-                            if !billingStartDayText.isEmpty {
-                                Text("of each month")
-                                    .foregroundStyle(.secondary)
-                                    .font(.subheadline)
+                        Picker("Billing start day", selection: $billingStartDay) {
+                            Text("Not set").tag(0)
+                            ForEach(1...28, id: \.self) { day in
+                                Text("Day \(day)").tag(day)
                             }
                         }
                     } else {
@@ -122,8 +114,8 @@ struct ClientRateView: View {
                         Task {
                             if let rate = Double(rateText) {
                                 let budget = Double(budgetText)
-                                let billingDay = billingCycle == "monthly"
-                                    ? Int(billingStartDayText).flatMap { $0 >= 1 && $0 <= 28 ? $0 : nil }
+                                let billingDay = billingCycle == "monthly" && billingStartDay > 0
+                                    ? billingStartDay
                                     : nil
                                 let weekday = billingCycle == "weekly" ? billingWeekday : nil
                                 await tallyStore.saveClientRate(
@@ -154,9 +146,7 @@ struct ClientRateView: View {
                         : String(format: "%.1f", budget)
                 }
                 billingCycle = tallyStore.billingCycle(for: client)
-                if let day = tallyStore.billingStartDay(for: client) {
-                    billingStartDayText = String(day)
-                }
+                billingStartDay = tallyStore.billingStartDay(for: client) ?? 0
                 if let weekday = tallyStore.billingWeekday(for: client) {
                     billingWeekday = weekday
                 }
