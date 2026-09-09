@@ -361,6 +361,10 @@ struct HomeView: View {
                     #endif
                     showClientPicker = true
                 } label: {
+                    #if os(visionOS)
+                    Label("Start Timer", systemImage: "play.fill")
+                        .font(.title3.bold())
+                    #else
                     ZStack {
                         Circle()
                             .fill(Color.green)
@@ -371,10 +375,12 @@ struct HomeView: View {
                             .foregroundStyle(.white)
                             .offset(x: 3) // optical center for play icon
                     }
+                    #endif
                 }
                 #if os(visionOS)
-                .buttonStyle(.borderless)
-                .hoverEffect(.highlight)
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .controlSize(.large)
                 #else
                 .buttonStyle(.plain)
                 .contentShape(Circle())
@@ -382,10 +388,12 @@ struct HomeView: View {
                 .accessibilityLabel("Start timer")
                 .accessibilityHint("Opens client picker to begin tracking time")
 
+                #if !os(visionOS)
                 Text("Start Timer")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
+                #endif
             }
             .transition(.scale(scale: 0.85).combined(with: .opacity))
         } else {
