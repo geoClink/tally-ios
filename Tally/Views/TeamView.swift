@@ -172,15 +172,16 @@ struct TeamView: View {
             Button { showCreateWorkspace = true } label: {
                 Label("Create Workspace", systemImage: "plus")
                     .font(.headline)
-                    #if !os(visionOS)
+                    #if !os(visionOS) && !os(macOS)
                     .foregroundStyle(.white)
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 12).fill(Color.blue))
                     #endif
             }
-            #if os(visionOS)
+            #if os(macOS) || os(visionOS)
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .tint(.blue)
             #endif
             Spacer()
         }

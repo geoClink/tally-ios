@@ -13,6 +13,7 @@ struct ClientPickerView: View {
     var recentClients: [String]
     var onStart: () -> Void
 
+    @Environment(\.dismiss) private var dismiss
     @State private var customClient: String = ""
     @FocusState private var isCustomFocused: Bool
     @State private var showPaywall = false
@@ -33,6 +34,7 @@ struct ClientPickerView: View {
     }
     
     var body: some View {
+        NavigationStack {
         VStack(spacing: 20) {
             Text("Who are you working for?")
                 .padding(.top, 8)
@@ -182,5 +184,11 @@ struct ClientPickerView: View {
         .padding(.horizontal)
         .padding(.bottom, 24)
         .sheet(isPresented: $showPaywall) { PaywallView() }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+            }
+        }
+        } // NavigationStack
     }
 }
