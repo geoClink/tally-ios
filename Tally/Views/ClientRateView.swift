@@ -109,7 +109,7 @@ struct ClientRateView: View {
                     }
                 }
             }
-            .navigationTitle("Client Settings")
+            .navigationTitle(client)
             #if os(macOS)
             .formStyle(.grouped)
             #endif

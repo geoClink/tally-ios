@@ -14,6 +14,7 @@ struct CalendarView: View {
     @State private var selectedMonth = Date()
     @State private var selectedDate: Date? = Date()
     @State private var expandedSessionId: UUID?
+    @State private var isLoading = false
 
     private var captionColor: Color {
         colorScheme == .dark ? .secondary : Color(white: 0.40)
@@ -107,7 +108,26 @@ struct CalendarView: View {
                 .ignoresSafeArea()
 
                 Group {
-                    if horizontalSizeClass == .regular {
+                    if isLoading {
+                        ProgressView("Loading activity...")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if tallyStore.sessions.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 48))
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                            Text("No activity yet")
+                                .font(.headline)
+                            Text("Start tracking time on the Home tab to see your activity here.")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if horizontalSizeClass == .regular {
                         HStack(alignment: .top, spacing: 0) {
                             calendarPanel
                                 .frame(width: 380)
@@ -124,11 +144,14 @@ struct CalendarView: View {
                         }
                     }
                 }
+
             }
             .navigationTitle("Activity")
             .task {
                 if tallyStore.sessions.isEmpty {
+                    isLoading = true
                     await tallyStore.loadSessions()
+                    isLoading = false
                 }
             }
         }
