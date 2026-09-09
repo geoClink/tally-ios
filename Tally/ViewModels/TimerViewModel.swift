@@ -38,6 +38,22 @@ class TimerViewModel {
                 startTicking()
             }
         }
+        #elseif os(macOS) || os(visionOS)
+        if UserDefaults.standard.bool(forKey: "tallyTimerIsRunning"),
+           let client = UserDefaults.standard.string(forKey: "tallyTimerClient"), !client.isEmpty,
+           let startDate = UserDefaults.standard.object(forKey: "tallyTimerStartDate") as? Date {
+            activeClient = client
+            isRunning = true
+            isPaused = UserDefaults.standard.bool(forKey: "tallyTimerIsPaused")
+            accumulatedSeconds = UserDefaults.standard.double(forKey: "tallyTimerAccumulated")
+            if isPaused {
+                elapsedSeconds = accumulatedSeconds
+            } else {
+                startTime = startDate
+                elapsedSeconds = accumulatedSeconds + Date.now.timeIntervalSince(startDate)
+                startTicking()
+            }
+        }
         #endif
     }
 
@@ -52,6 +68,12 @@ class TimerViewModel {
         #if os(iOS)
         AppGroupStore.writeTimerState(client: client, startDate: .now, isPaused: false, accumulated: 0)
         scheduleIdleNotification(client: client)
+        #elseif os(macOS) || os(visionOS)
+        UserDefaults.standard.set(true,    forKey: "tallyTimerIsRunning")
+        UserDefaults.standard.set(client,  forKey: "tallyTimerClient")
+        UserDefaults.standard.set(Date.now, forKey: "tallyTimerStartDate")
+        UserDefaults.standard.set(false,   forKey: "tallyTimerIsPaused")
+        UserDefaults.standard.set(0.0,     forKey: "tallyTimerAccumulated")
         #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.start(client: client)
@@ -79,6 +101,9 @@ class TimerViewModel {
             isPaused: true,
             accumulated: accumulatedSeconds
         )
+        #elseif os(macOS) || os(visionOS)
+        UserDefaults.standard.set(true,              forKey: "tallyTimerIsPaused")
+        UserDefaults.standard.set(accumulatedSeconds, forKey: "tallyTimerAccumulated")
         #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.pause(accumulatedSeconds: accumulatedSeconds)
@@ -97,6 +122,9 @@ class TimerViewModel {
             isPaused: false,
             accumulated: accumulatedSeconds
         )
+        #elseif os(macOS) || os(visionOS)
+        UserDefaults.standard.set(Date.now, forKey: "tallyTimerStartDate")
+        UserDefaults.standard.set(false,    forKey: "tallyTimerIsPaused")
         #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.resume(accumulatedSeconds: accumulatedSeconds)
@@ -107,9 +135,13 @@ class TimerViewModel {
         let total = accumulatedSeconds + (isPaused ? 0 : secondsSinceStart())
         #if os(iOS)
         AppGroupStore.clearTimerState()
-        #endif
-        #if os(iOS)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["tally.idle"])
+        #elseif os(macOS) || os(visionOS)
+        UserDefaults.standard.set(false, forKey: "tallyTimerIsRunning")
+        UserDefaults.standard.removeObject(forKey: "tallyTimerClient")
+        UserDefaults.standard.removeObject(forKey: "tallyTimerStartDate")
+        UserDefaults.standard.set(false, forKey: "tallyTimerIsPaused")
+        UserDefaults.standard.set(0.0,   forKey: "tallyTimerAccumulated")
         #endif
         #if !canImport(AppKit) && !os(visionOS)
         LiveActivityManager.shared.end()
